@@ -67,6 +67,29 @@
   </div>
   {% endif %}
 
+  <!-- Sent requests (pending) -->
+  {% if outgoing %}
+  <div class="mb-10" x-data>
+    <h2 class="text-sm font-semibold text-white/60 uppercase tracking-wide mb-3">Pending requests sent</h2>
+    <div class="space-y-2">
+      {% for fr in outgoing %}
+      <div class="flex items-center gap-3 bg-white/5 border border-white/10 rounded-lg px-4 py-3" id="fout-{{ fr.id }}">
+        <span class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center font-bold text-white/70">
+          {{ fr.to_user.get_full_name|default:fr.to_user.email|first|upper }}
+        </span>
+        <div class="min-w-0 flex-1">
+          <div class="font-semibold truncate">{{ fr.to_user.get_full_name|default:fr.to_user.email }}</div>
+          <div class="text-sm text-white/50 truncate">{{ fr.to_user.email }}</div>
+        </div>
+        <span class="text-xs text-white/40 mr-2"><i class="fas fa-clock mr-1"></i>Sent {{ fr.created_at|timesince }} ago</span>
+        <button @click="window.cancelFriendRequest({{ fr.id }}, '#fout-{{ fr.id }}')"
+                class="px-3 py-1.5 rounded bg-white/10 hover:bg-netflix-red/30 text-sm">Cancel</button>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
   <!-- Favorites -->
   {% if favorites %}
   <h2 class="text-sm font-semibold text-white/60 uppercase tracking-wide mb-3 flex items-center gap-2">
@@ -95,7 +118,10 @@
 </section>
 
 <script>
-  window.LISA_FRIENDS = { searchUrl: "{% url 'friends:search' %}" };
+  window.LISA_FRIENDS = {
+    searchUrl: "{% url 'friends:search' %}",
+    cancelUrlTmpl: "{% url 'friends:cancel_request' 0 %}",
+  };
 </script>
 <script src="{% static 'js/friends.js' %}" defer></script>
 {% endblock %}

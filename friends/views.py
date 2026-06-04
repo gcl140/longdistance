@@ -50,10 +50,19 @@ def friends_list(request):
         FriendRequest.objects.filter(to_user=request.user, status=FriendRequest.PENDING)
         .select_related("from_user")
     )
+    # Pending requests this user has sent out — shown so they can see/cancel them.
+    outgoing = (
+        FriendRequest.objects.filter(from_user=request.user, status=FriendRequest.PENDING)
+        .select_related("to_user")
+        .order_by("-created_at")
+    )
     return render(
         request,
         "friends/friends.html",
-        {"contacts": contacts, "favorites": favorites, "others": others, "incoming": incoming},
+        {
+            "contacts": contacts, "favorites": favorites, "others": others,
+            "incoming": incoming, "outgoing": outgoing,
+        },
     )
 
 
@@ -219,6 +228,24 @@ def respond_request(request, request_id, action):
         data__friend_request_id=fr.id,
     ).update(is_read=True)
     return JsonResponse({"ok": True, "status": "declined", "message": "Request declined."})
+
+
+@login_required
+@require_POST
+def cancel_request(request, request_id):
+    """Withdraw a pending request the current user sent. JSON for the row's cancel button."""
+    fr = get_object_or_404(
+        FriendRequest, id=request_id, from_user=request.user, status=FriendRequest.PENDING
+    )
+    fr.delete()
+    # Pull any "Bo sent you a friend request" notification on the recipient side
+    # so they don't see a stale one after the sender backed out.
+    Notification.objects.filter(
+        recipient=fr.to_user,
+        kind=Notification.FRIEND_REQUEST,
+        data__friend_request_id=fr.id,
+    ).delete()
+    return JsonResponse({"ok": True, "message": f"Cancelled request to {_display(fr.to_user)}."})
 
 
 @login_required

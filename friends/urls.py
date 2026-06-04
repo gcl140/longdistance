@@ -11,6 +11,7 @@ urlpatterns = [
     # Back-compat alias: the old "add by email" form name.
     path("add/", views.send_request, name="add"),
     path("request/<int:request_id>/<str:action>/", views.respond_request, name="respond_request"),
+    path("request/<int:request_id>/cancel/", views.cancel_request, name="cancel_request"),
     path("<int:contact_id>/remove/", views.remove_friend, name="remove"),
     path("<int:contact_id>/favorite/", views.toggle_favorite, name="toggle_favorite"),
     path("invite/<int:invite_id>/<str:action>/", views.respond_invite, name="respond_invite"),
