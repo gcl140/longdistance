@@ -20,6 +20,9 @@ _CHUNK = 8192
 
 # Browsers reject WebVTT subtitle tracks unless served as text/vtt.
 mimetypes.add_type("text/vtt", ".vtt")
+# HLS playlists + segments (Safari's native player checks the content type).
+mimetypes.add_type("application/vnd.apple.mpegurl", ".m3u8")
+mimetypes.add_type("video/mp2t", ".ts")
 
 
 def _iter_file(path, start, length):

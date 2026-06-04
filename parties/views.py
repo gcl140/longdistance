@@ -182,11 +182,10 @@ def room(request, code):
         return redirect("parties:my_parties")
 
     if not _is_member(party, request.user):
-        if party.is_private:
-            messages.error(
-                request, "This party is private — you need an invite or the code."
-            )
-            return redirect("parties:my_parties")
+        # If you hit this URL, you have the access code (it's part of the path).
+        # Having the code IS the credential — same trust model as Google Meet
+        # links. Auto-add as a member so both `/parties/room/<code>/` and the
+        # paste-the-code join form behave identically for private rooms.
         WatchPartyMember.objects.get_or_create(party=party, user=request.user)
 
     session, _ = VideoSession.objects.get_or_create(party=party)

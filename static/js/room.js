@@ -9,7 +9,17 @@
   const REQUEST_URL = L.requestUrl;
   const MSGS_URL = L.msgsUrl;
   const RESUME_POS = L.resumePos || 0;
-  const STUN = [{ urls: "stun:stun.l.google.com:19302" }];
+  // ICE servers for WebRTC. STUN gets peers their public IPs; TURN relays
+  // media when direct P2P is blocked (universities, corporate NATs, CGNAT).
+  // Free relay courtesy of openrelay.metered.ca — fine for a few users. For
+  // production scale, self-host coturn or use Twilio/Cloudflare Calls.
+  const STUN = [
+    { urls: "stun:stun.l.google.com:19302" },
+    { urls: "stun:stun.cloudflare.com:3478" },
+    { urls: "turn:openrelay.metered.ca:80",  username: "openrelayproject", credential: "openrelayproject" },
+    { urls: "turn:openrelay.metered.ca:443", username: "openrelayproject", credential: "openrelayproject" },
+    { urls: "turn:openrelay.metered.ca:443?transport=tcp", username: "openrelayproject", credential: "openrelayproject" },
+  ];
 
   function csrf() { return document.cookie.match(/csrftoken=([^;]+)/)?.[1] || ""; }
   function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
@@ -18,7 +28,7 @@
   const msgBox   = document.getElementById('messages');
   const camStrip = document.getElementById('cam-strip');
 
-  let sock, MYID = null, applying = false, lastUrl = L.videoUrl || "", lastMsgId = 0;
+  let sock, MYID = null, applying = false, lastUrl = L.videoUrl || "", lastMsgId = 0, hls = null;
   let resumed = false, previewVideo = null, previewBusy = false, previewWant = null;
   function fmt(t) {
     if (!isFinite(t) || t < 0) return '0:00';
@@ -135,10 +145,35 @@
   }
 
   /* ---------------- Playback sync ---------------- */
+  function isHls(url) { return /\.m3u8(\?|$)/i.test(url || ""); }
+
+  // Point a <video> at a URL. HLS (.m3u8) streams need hls.js on Chrome/Firefox
+  // (Safari/iOS play them natively); plain MP4 just sets .src.
+  function attachVideo(el, url) {
+    if (!url) return;
+    if (el === player && hls) { hls.destroy(); hls = null; }  // tear down old stream
+    if (isHls(url)) {
+      if (el.canPlayType('application/vnd.apple.mpegurl')) {
+        el.src = url;                                          // native HLS (Safari)
+      } else if (window.Hls && window.Hls.isSupported()) {
+        el.removeAttribute('src');                            // hls.js feeds via MSE
+        const h = new window.Hls({ enableWorker: true });
+        h.loadSource(url);
+        h.attachMedia(el);
+        if (el === player) hls = h;
+      } else {
+        el.src = url;                                          // last resort
+      }
+    } else {
+      el.src = url;
+    }
+  }
+
   function setVideo(url) {
     if (url && url !== lastUrl) {
-      lastUrl = url; player.src = url;
-      if (previewVideo) previewVideo.src = url;
+      lastUrl = url;
+      attachVideo(player, url);
+      if (previewVideo && !isHls(url)) previewVideo.src = url;  // thumbs: MP4 only
       resumed = true;
     }
     if (url && window.__room) window.__room.hasVideo = true;
@@ -160,19 +195,31 @@
     player.addEventListener('pause', () => { if (!applying) sendSync({ is_playing: false, position: player.currentTime }); });
     player.addEventListener('seeked',() => { if (!applying) sendSync({ position: player.currentTime, is_playing: !player.paused }); });
   }
-  function heartbeat() { setInterval(() => { if (!player.paused) sendSync({ position: player.currentTime, is_playing: true }); }, 4000); }
+  // Host beats out a sync every 1s while playing — tight enough that guests
+  // stay within ~1s of the host even with Cloudflare-Tunnel latency.
+  function heartbeat() { setInterval(() => { if (!player.paused) sendSync({ position: player.currentTime, is_playing: true }); }, 1000); }
   function applySync(s) {
     const ctx = window.__room;
     if (s.title) ctx.movieTitle = s.title;
     if (s.video_url) setVideo(s.video_url);
     if (s.subtitle) setSubtitle(s.subtitle);
     if (CAN_CONTROL) { ctx.syncLabel = s.is_playing ? 'playing' : 'paused'; return; }
-    if (!player.src) return;
+    if (!lastUrl) return;  // nothing loaded yet (player.src is empty for HLS/MSE)
     applying = true;
     if (s.position != null) {
       const drift = s.position - player.currentTime;
-      if (Math.abs(drift) > 2) player.currentTime = s.position;
-      ctx.syncLabel = Math.abs(drift) < 0.5 ? 'in sync' : 'syncing…';
+      // Hard jump on big drift; nudge playbackRate on small drift so we glide
+      // back instead of jolting. Under 0.3s = "in sync" cosmetically.
+      if (Math.abs(drift) > 1.5) {
+        player.currentTime = s.position;
+        player.playbackRate = 1.0;
+      } else if (Math.abs(drift) > 0.3) {
+        // 0.3s–1.5s drift: catch up smoothly within ~3s.
+        player.playbackRate = drift > 0 ? 1.05 : 0.97;
+      } else {
+        player.playbackRate = 1.0;
+      }
+      ctx.syncLabel = Math.abs(drift) < 0.3 ? 'in sync' : 'syncing…';
     }
     if (s.is_playing === true && player.paused) { if (s.position != null) player.currentTime = s.position; player.play().catch(() => {}); }
     if (s.is_playing === false && !player.paused) player.pause();
@@ -371,6 +418,7 @@
   }
 
   function ensurePreview() {
+    if (isHls(lastUrl)) return null;  // hover-scrub thumbnails aren't worth an extra HLS pipeline
     if (!previewVideo) {
       previewVideo = document.createElement('video');
       previewVideo.muted = true; previewVideo.preload = 'auto'; previewVideo.playsInline = true;
@@ -387,6 +435,7 @@
   }
   function seekPreview(t) {
     const pv = ensurePreview();
+    if (!pv) return;  // HLS / no preview pipeline
     if (previewBusy) { previewWant = t; return; }
     previewBusy = true;
     try { pv.currentTime = t; } catch (e) { previewBusy = false; }
@@ -492,6 +541,11 @@
       elTimeline.addEventListener('click', (e) => { if (player.duration) player.currentTime = pctAt(e.clientX) * player.duration; });
     }
 
+    // If the room already has a video, attach it. HLS must go through hls.js
+    // (the template can't set a working .m3u8 src on Chrome); MP4 keeps the
+    // template-set src. Done here (not via setVideo) so `resumed` stays false
+    // and the loadedmetadata handler can still seek to RESUME_POS.
+    if (lastUrl && isHls(lastUrl)) attachVideo(player, lastUrl);
     if (lastUrl) ensurePreview();
   }
 })();

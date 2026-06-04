@@ -93,7 +93,10 @@ if os.getenv('POSTGRES_DB'):
             'PASSWORD': os.getenv('POSTGRES_PASSWORD', ''),
             'HOST': os.getenv('POSTGRES_HOST', '127.0.0.1'),
             'PORT': os.getenv('POSTGRES_PORT', '5432'),
-            'CONN_MAX_AGE': 60,
+            # 0 = close the connection after each request. Under ASGI/Channels,
+            # persistent connections (CONN_MAX_AGE>0) accumulate across the many
+            # WebSocket threads and exhaust Postgres' connection slots.
+            'CONN_MAX_AGE': int(os.getenv('DB_CONN_MAX_AGE', '0')),
         }
     }
 else:
@@ -196,12 +199,13 @@ SOCIAL_AUTH_GOOGLE_OAUTH2_SCOPE = ['email', 'profile']
 SOCIAL_AUTH_PIPELINE = (
     'social_core.pipeline.social_auth.social_details',
     'social_core.pipeline.social_auth.social_uid',
-    'forum.pipeline.prevent_duplicate_social_auth',  # ✅ Here
     'social_core.pipeline.social_auth.auth_allowed',
     'social_core.pipeline.social_auth.social_user',
     'social_core.pipeline.user.get_username',
+    # If a Lisa user already exists with the same email, link them instead of
+    # erroring out — matches the "email = identity" model in yuzzaz/CustomUser.
+    'social_core.pipeline.social_auth.associate_by_email',
     'social_core.pipeline.user.create_user',
-    'forum.pipeline.save_user_details',  # where you set is_parent, etc.
     'social_core.pipeline.social_auth.associate_user',
     'social_core.pipeline.social_auth.load_extra_data',
     'social_core.pipeline.user.user_details',

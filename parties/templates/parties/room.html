@@ -56,7 +56,7 @@
         <!-- Player + custom controls -->
         <div id="player-wrap" x-show="hasVideo" x-cloak class="relative w-full h-full flex items-center justify-center group/p">
           <video id="player" class="max-h-full max-w-full" playsinline
-                 {% if session.video_url %}src="{{ session.video_url }}"{% endif %}>
+                 {% if session.video_url and '.m3u8' not in session.video_url %}src="{{ session.video_url }}"{% endif %}>
             {% if session.subtitle_url %}<track id="subtrack" kind="subtitles" srclang="en" label="English" src="{{ session.subtitle_url }}" default>{% endif %}
           </video>
 
@@ -283,5 +283,7 @@
     hasVideo: {% if session.video_url %}true{% else %}false{% endif %},
   };
 </script>
+<!-- hls.js: adaptive-bitrate playback for transcoded movies (master.m3u8). -->
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1"></script>
 <script src="{% static 'js/room.js' %}" defer></script>
 {% endblock %}

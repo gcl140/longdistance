@@ -24,3 +24,19 @@ application = ProtocolTypeRouter({
         AuthMiddlewareStack(URLRouter(websocket_urlpatterns))
     ),
 })
+
+# This module is imported only when serving ASGI (Daphne), never by management
+# commands like migrate/collectstatic — so it's a safe place to recover any
+# transcodes that a previous restart interrupted, off the main thread.
+import threading  # noqa: E402
+
+
+def _resume_transcodes():
+    try:
+        from catalog.transcode import resume_stuck
+        resume_stuck()
+    except Exception as e:  # never let startup recovery crash the server
+        print(f"[asgi] transcode resume failed: {e}")
+
+
+threading.Thread(target=_resume_transcodes, daemon=True).start()

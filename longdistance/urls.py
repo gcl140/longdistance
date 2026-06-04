@@ -20,6 +20,8 @@ def logout_then_google(request):
 
 
 urlpatterns = [
+    # Bare domain -> the landing page, so the shareable link is just the host.
+    path('', RedirectView.as_view(url='/home/', permanent=False)),
     path('admin/', admin.site.urls),
     path('home/', include('yuzzaz.urls')),
     path('parties/', include('parties.urls')),
