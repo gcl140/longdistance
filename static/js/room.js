@@ -30,6 +30,11 @@
   const peers = {};
   const knownPeers = new Set();
   const peerNames = {};
+  // Tiles are keyed by USER, not by connection — so reconnects/renegotiations
+  // never duplicate a person's tile. peers{} stays keyed per connection.
+  const peerUser = {};   // peerId -> userId
+  const userPeers = {};  // userId -> Set(peerId)
+  const userNames = {};  // userId -> display name
 
   window.room = function () {
     return {
@@ -207,59 +212,93 @@
     });
   }
 
-  /* ---------------- WebRTC (1:1 face-cam) ---------------- */
-  function nameFor(peerId, isLocal) { return isLocal ? 'You' : (peerNames[peerId] || 'Guest'); }
-  function camTile(peerId, isLocal) {
-    let wrap = document.getElementById('camwrap-' + peerId);
+  /* ---------------- WebRTC (face-cam) ----------------
+     Connections are per-peer (channel), but tiles are per-USER so the same
+     person never gets duplicate tiles across reconnects/renegotiations. */
+  function recordPeer(peerId, userId, name) {
+    if (userId !== undefined && userId !== null) {
+      peerUser[peerId] = userId;
+      (userPeers[userId] = userPeers[userId] || new Set()).add(peerId);
+      if (name) userNames[userId] = name;
+    }
+    if (name) peerNames[peerId] = name;
+  }
+  // A DOM-safe tile key per user (channel names contain '.!' etc.).
+  function tileKeyForPeer(peerId) {
+    const uid = peerUser[peerId];
+    return uid !== undefined && uid !== null ? 'u' + uid : 'p' + peerId.replace(/[^a-zA-Z0-9_-]/g, '');
+  }
+  function nameForKey(key, isLocal) {
+    if (isLocal) return 'You';
+    if (key.charAt(0) === 'u') return userNames[key.slice(1)] || 'Guest';
+    return 'Guest';
+  }
+  function camTile(key, isLocal) {
+    let wrap = document.getElementById('camwrap-' + key);
     if (!wrap) {
       wrap = document.createElement('div');
-      wrap.id = 'camwrap-' + peerId;
+      wrap.id = 'camwrap-' + key;
       wrap.className = 'relative rounded-lg overflow-hidden bg-black aspect-video group ' +
                       (isLocal ? 'ring-2 ring-netflix-red' : 'ring-1 ring-white/15');
       const v = document.createElement('video');
-      v.id = 'cam-' + peerId; v.autoplay = true; v.playsInline = true; if (isLocal) v.muted = true;
+      v.id = 'cam-' + key; v.autoplay = true; v.playsInline = true; if (isLocal) v.muted = true;
       v.className = 'w-full h-full object-cover';
       const ph = document.createElement('div');
-      ph.id = 'ph-' + peerId;
+      ph.id = 'ph-' + key;
       ph.className = 'absolute inset-0 flex flex-col items-center justify-center bg-netflix-dark hidden';
       ph.innerHTML = '<i class="fas fa-video-slash text-white/40 text-xl mb-1"></i><span class="ph-name text-[10px] text-white/60 px-1 text-center"></span>';
-      ph.querySelector('.ph-name').textContent = nameFor(peerId, isLocal);
+      ph.querySelector('.ph-name').textContent = nameForKey(key, isLocal);
       const label = document.createElement('span');
-      label.id = 'lbl-' + peerId;
+      label.id = 'lbl-' + key;
       label.className = 'absolute bottom-1 left-1 text-[10px] bg-black/70 px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition pointer-events-none';
-      label.textContent = nameFor(peerId, isLocal);
+      label.textContent = nameForKey(key, isLocal);
       wrap.appendChild(v); wrap.appendChild(ph); wrap.appendChild(label);
       camStrip.appendChild(wrap);
       updateCamUI();
     }
-    return document.getElementById('cam-' + peerId);
+    return document.getElementById('cam-' + key);
   }
-  function updateTileName(peerId) {
-    const nm = peerNames[peerId] || 'Guest';
-    const l = document.getElementById('lbl-' + peerId); if (l) l.textContent = nm;
-    const ph = document.getElementById('ph-' + peerId); if (ph) ph.querySelector('.ph-name').textContent = nm;
+  function updateTileName(key) {
+    const nm = nameForKey(key, false);
+    const l = document.getElementById('lbl-' + key); if (l) l.textContent = nm;
+    const ph = document.getElementById('ph-' + key); if (ph) ph.querySelector('.ph-name').textContent = nm;
   }
   function addLocalTile() { camTile('local', true).srcObject = localStream; }
   function setTileStream(peerId, stream) {
-    const v = camTile(peerId, false);
+    const key = tileKeyForPeer(peerId);
+    const v = camTile(key, false);
     v.srcObject = stream; v.classList.remove('hidden');
-    document.getElementById('ph-' + peerId)?.classList.add('hidden');
-    updateTileName(peerId);
+    document.getElementById('ph-' + key)?.classList.add('hidden');
+    updateTileName(key);
   }
   function showCamOff(peerId) {
-    camTile(peerId, false);
-    document.getElementById('cam-' + peerId)?.classList.add('hidden');
-    document.getElementById('ph-' + peerId)?.classList.remove('hidden');
-    updateTileName(peerId);
+    const key = tileKeyForPeer(peerId);
+    camTile(key, false);
+    document.getElementById('cam-' + key)?.classList.add('hidden');
+    document.getElementById('ph-' + key)?.classList.remove('hidden');
+    updateTileName(key);
   }
-  function removeTile(peerId) { document.getElementById('camwrap-' + peerId)?.remove(); updateCamUI(); }
+  function removeTileKey(key) { document.getElementById('camwrap-' + key)?.remove(); updateCamUI(); }
   function updateCamUI() {
     const empty = document.getElementById('cam-empty');
     if (empty) empty.style.display = camStrip.children.length ? 'none' : 'block';
   }
+  // Drop one connection; only remove the user's tile when they have no live peers left.
+  function dropPeer(peerId) {
+    knownPeers.delete(peerId);
+    if (peers[peerId]) { peers[peerId].close(); delete peers[peerId]; }
+    const uid = peerUser[peerId];
+    delete peerUser[peerId];
+    if (uid !== undefined && userPeers[uid]) {
+      userPeers[uid].delete(peerId);
+      if (userPeers[uid].size === 0) { delete userPeers[uid]; removeTileKey('u' + uid); }
+    } else {
+      removeTileKey(tileKeyForPeer(peerId));
+    }
+  }
 
   function freshPC(peerId) {
-    if (peers[peerId]) { peers[peerId].close(); delete peers[peerId]; }
+    if (peers[peerId]) { peers[peerId].close(); }
     const pc = new RTCPeerConnection({ iceServers: STUN });
     if (localStream) {
       localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
@@ -280,7 +319,7 @@
   }
 
   function onPresence(m) {
-    if (m.display) peerNames[m.peer_id] = m.display;
+    recordPeer(m.peer_id, m.user_id, m.display);
     if (m.event === 'join') {
       knownPeers.add(m.peer_id);
       if (localStream) {
@@ -288,14 +327,12 @@
         else wsSend({ type: 'webrtc', action: 'join', to: m.peer_id });
       }
     } else if (m.event === 'leave') {
-      knownPeers.delete(m.peer_id);
-      if (peers[m.peer_id]) { peers[m.peer_id].close(); delete peers[m.peer_id]; }
-      removeTile(m.peer_id);
+      dropPeer(m.peer_id);
     }
   }
   async function onSignal(m) {
     const from = m.from;
-    if (m.from_user) peerNames[from] = m.from_user;
+    recordPeer(from, m.from_user_id, m.from_user);  // know the user before any tile is made
     if (m.action === 'join') {
       knownPeers.add(from);
       if (MYID > from) makeOffer(from);

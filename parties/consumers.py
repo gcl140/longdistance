@@ -99,6 +99,7 @@ class PartyConsumer(AsyncWebsocketConsumer):
                 "type": "webrtc_signal",
                 "from": self.peer_id,
                 "from_user": self.display,
+                "from_user_id": self.user.id,  # stable id so tiles dedupe per user
                 "to": data.get("to"),          # None = broadcast (call announce)
                 "signal": data.get("signal"),
                 "action": data.get("action"),  # 'join' | 'leave' | 'offer' | 'answer' | 'ice'
@@ -148,6 +149,7 @@ class PartyConsumer(AsyncWebsocketConsumer):
             "type": "webrtc",
             "from": e["from"],
             "from_user": e["from_user"],
+            "from_user_id": e.get("from_user_id"),
             "action": e["action"],
             "signal": e["signal"],
         }))
