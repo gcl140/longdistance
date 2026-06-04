@@ -168,9 +168,9 @@ def login(request):
             auth_login(request, user, backend='django.contrib.auth.backends.ModelBackend')
             messages.success(request, "You have successfully logged in.")
             if user.is_staff:
-                return redirect('catalog:library')  # staff manage the movie library
+                return redirect('admin_dashboard')
             else:
-                return redirect('home')  # Standard redirect — adjust to your default user landing page
+                return redirect('home')
 
         messages.error(request, "Invalid credentials, please try again.")
 
