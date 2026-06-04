@@ -1,0 +1,70 @@
+{% extends 'yuzzaz/full_base.html' %}
+{% block title %}| My Parties{% endblock %}
+{% block content %}
+<section class="pt-24 md:pt-28 px-4 md:px-12 pb-16 min-h-screen max-w-7xl mx-auto">
+
+  <!-- Header -->
+  <div class="flex flex-wrap items-center justify-between gap-4 mb-8">
+    <div>
+      <h1 class="text-3xl md:text-4xl font-extrabold">Your Watch Parties</h1>
+      <p class="text-white/60 mt-1">Start a room, or jump back into one.</p>
+    </div>
+    <div class="flex gap-3">
+      <a href="{% url 'parties:join' %}" class="px-5 py-2.5 rounded bg-white/10 hover:bg-white/20 font-semibold transition">
+        <i class="fas fa-right-to-bracket mr-2"></i>Join with code
+      </a>
+      <a href="{% url 'parties:create' %}" class="px-5 py-2.5 rounded bg-netflix-red hover:bg-netflix-red/90 font-semibold transition">
+        <i class="fas fa-plus mr-2"></i>New Party
+      </a>
+    </div>
+  </div>
+
+  <!-- Pending invites -->
+  {% if invites %}
+  <div class="mb-10">
+    <h2 class="text-lg font-bold mb-3 text-white/90">Invitations</h2>
+    <div class="space-y-3">
+      {% for inv in invites %}
+      <div class="flex items-center justify-between bg-white/5 border border-white/10 rounded-lg px-4 py-3">
+        <div>
+          <span class="font-semibold">{{ inv.party.name }}</span>
+          <span class="text-white/50 text-sm">— invited by {{ inv.sender.get_full_name|default:inv.sender.email }}</span>
+        </div>
+        <div class="flex gap-2">
+          <form method="POST" action="{% url 'friends:respond_invite' inv.id 'accept' %}">{% csrf_token %}
+            <button class="px-4 py-1.5 rounded bg-netflix-red hover:bg-netflix-red/90 text-sm font-semibold">Accept</button>
+          </form>
+          <form method="POST" action="{% url 'friends:respond_invite' inv.id 'decline' %}">{% csrf_token %}
+            <button class="px-4 py-1.5 rounded bg-white/10 hover:bg-white/20 text-sm">Decline</button>
+          </form>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Hosting -->
+  <h2 class="text-lg font-bold mb-3 text-white/90">Hosting</h2>
+  {% if hosting %}
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-10">
+    {% for party in hosting %}{% include 'parties/_party_card.html' with party=party host=True %}{% endfor %}
+  </div>
+  {% else %}
+  <p class="text-white/50 mb-10">You're not hosting any parties yet.
+    <a href="{% url 'parties:create' %}" class="text-netflix-red hover:underline">Start one</a>.</p>
+  {% endif %}
+
+  <!-- Joined -->
+  <h2 class="text-lg font-bold mb-3 text-white/90">Joined</h2>
+  {% if joined %}
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+    {% for party in joined %}{% include 'parties/_party_card.html' with party=party host=False %}{% endfor %}
+  </div>
+  {% else %}
+  <p class="text-white/50">No joined parties. Got a code?
+    <a href="{% url 'parties:join' %}" class="text-netflix-red hover:underline">Join a party</a>.</p>
+  {% endif %}
+
+</section>
+{% endblock %}

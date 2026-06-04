@@ -1,0 +1,211 @@
+{% extends "yuzzaz/full_base.html" %}
+{% load static %}
+{% block title %}| Contact Us{% endblock %}
+{% block extra_head %}<script src="https://www.google.com/recaptcha/api.js" async defer></script>
+{% endblock %}
+{% block content %}
+<section id="contact" class="relative bg-gradient-to-br from-white to-gray-50 py-24 overflow-hidden">
+  <!-- Decorative background elements -->
+  <div class="absolute inset-0 bg-grid-gray-100 [mask-image:linear-gradient(0deg,white,rgba(255,255,255,0.6))]"></div>
+  <div class="absolute top-0 left-0 w-64 h-64 bg-gradient-to-br from-maroon-500/5 to-transparent rounded-full blur-3xl"></div>
+  <div class="absolute bottom-0 right-0 w-96 h-96 bg-gradient-to-tr from-maroon-500/5 to-transparent rounded-full blur-3xl"></div>
+  
+  <!-- Red accent strip -->
+  <div class="absolute inset-x-0 top-1/2 -translate-y-1/2 h-32 bg-maroon-500 shadow-lg"></div>
+
+  <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- Title section -->
+    <div class="text-center mb-20">
+      <h1 class="text-4xl md:text-5xl font-bold tracking-tight mb-4">
+
+      <div class="text-center mb-16">
+        <h2 class="text-4xl md:text-5xl lg:text-6xl font-bold font-playfair bg-maroon-500 bg-clip-text font-bold text-transparent">{{ content.footer_title }}</h2>
+        <div class="flex items-center justify-center gap-4 my-4">
+          <div class="h-px w-12 bg-maroon-500/50"></div>
+          <span class="text-sm font-semibold tracking-widest uppercase">
+            Active Always
+          </span>
+          <div class="h-px w-12 bg-maroon-500/50"></div>
+        </div>
+      </div>
+
+      </h1>
+      <p class="text-gray-600 max-w-2xl mx-auto text-lg">
+        Get in touch with our team. We're here to help you with any questions.
+      </p>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+      
+            <!-- Right: Contact Form -->
+      <div class="relative">
+        <div class="bg-white rounded-2xl shadow-2xl border border-gray-100 p-8 lg:p-10">
+          <!-- Form header -->
+          <div class="mb-10">
+            <div class="flex items-center space-x-3 mb-4">
+              <div class="w-2 h-8 bg-maroon-500 rounded-full"></div>
+              <h3 class="text-2xl font-bold text-gray-900">
+                Send a Message
+              </h3>
+            </div>
+            <p class="text-gray-600">
+              Fill out the form below and we'll get back to you as soon as possible.
+            </p>
+          </div>
+
+          <form method="POST" action="{% url 'contact' %}" class="space-y-8">
+            {% csrf_token %}
+            
+            <!-- Name field -->
+            <div class="space-y-2">
+              <label class="block text-sm font-semibold text-gray-900 tracking-wide uppercase">
+                Your Name
+              </label>
+              <div class="relative">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <i class="fas fa-user text-gray-400"></i>
+                </div>
+                <input
+                  type="text"
+                  name="full_name"
+                  value="{{ form.full_name.value|default:'' }}"
+                  class="w-full pl-10 pr-4 py-3.5 bg-white border-2 border-gray-200 rounded-xl
+                         focus:outline-none focus:border-maroon-500 focus:ring-2 focus:ring-maroon-500/20
+                         transition duration-200 placeholder-gray-400"
+                  placeholder="John Doe"
+                />
+              </div>
+            </div>
+
+            <!-- Email field -->
+            <div class="space-y-2">
+              <label class="block text-sm font-semibold text-gray-900 tracking-wide uppercase">
+                Email Address
+              </label>
+              <div class="relative">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <i class="fas fa-envelope text-gray-400"></i>
+                </div>
+                <input
+                  type="email"
+                  name="email"
+                  required
+                  value="{{ form.email.value|default:'' }}"
+                  class="w-full pl-10 pr-4 py-3.5 bg-white border-2 border-gray-200 rounded-xl
+                         focus:outline-none focus:border-maroon-500 focus:ring-2 focus:ring-maroon-500/20
+                         transition duration-200 placeholder-gray-400"
+                  placeholder="john@example.com"
+                />
+              </div>
+            </div>
+
+            <!-- Message field -->
+            <div class="space-y-2">
+              <label class="block text-sm font-semibold text-gray-900 tracking-wide uppercase">
+                Your Message
+              </label>
+              <div class="relative">
+                <div class="absolute top-3 left-3 pointer-events-none">
+                  <i class="fas fa-comment text-gray-400"></i>
+                </div>
+                <textarea
+                  name="message"
+                  rows="5"
+                  required
+                  class="w-full pl-10 pr-4 py-3.5 bg-white border-2 border-gray-200 rounded-xl resize-none
+                         focus:outline-none focus:border-maroon-500 focus:ring-2 focus:ring-maroon-500/20
+                         transition duration-200 placeholder-gray-400"
+                  placeholder="Tell us how we can help you..."
+                >{{ form.message.value|default:'' }}</textarea>
+              </div>
+            </div>
+
+            <div class="flex justify-center">
+              {{ form.captcha }}
+            </div>
+
+
+            <!-- Submit button -->
+            <button
+              type="submit"
+              class="w-full bg-maroon-500  text-white font-semibold py-4 rounded-xl
+                     hover:bg-maroon-600 transition-all duration-300 
+                     transform hover:-translate-y-0.5 hover:shadow-xl shadow-lg
+                     flex items-center justify-center gap-3 group"
+            >
+              <i class="fas fa-paper-plane group-hover:rotate-12 transition-transform duration-300"></i>
+              <span>Send Message</span>
+            </button>
+
+            <!-- Form footer -->
+            <p class="text-center text-gray-500 text-sm pt-4">
+              By submitting this form, you agree to our privacy policy.
+            </p>
+          </form>
+        </div>
+      </div>
+      <!-- Left: Image & Info Card -->
+      <div class="relative group">
+        <div class="absolute -inset-4 bg-maroon-500 rounded-3xl blur opacity-20 group-hover:opacity-30 transition duration-500"></div>
+        <div class="relative bg-white rounded-2xl shadow-2xl overflow-hidden border border-gray-100 transform transition duration-300 group-hover:scale-[1.02]">
+          <div class="p-2 bg-maroon-500"></div>
+          <div class="p-8">
+            <img 
+              src="{% static 'images/PC_Red.png' %}" 
+              alt="Contact Us Illustration" 
+              class="w-full h-auto mb-8 transform transition duration-500 group-hover:scale-105"
+            >
+            <div class="space-y-6">
+              <div class="flex items-start space-x-4">
+                <div class="flex-shrink-0 w-12 h-12 bg-maroon-50 rounded-xl flex items-center justify-center">
+                  <i class="fas fa-envelope text-maroon-500 text-xl"></i>
+                </div>
+                <div>
+                  <h4 class="font-semibold text-gray-900 mb-1">Email Us</h4>
+                  <p class="text-gray-600">We'll respond within 24 hours</p>
+                </div>
+              </div>
+              <div class="flex items-start space-x-4">
+                <div class="flex-shrink-0 w-12 h-12 bg-maroon-50 rounded-xl flex items-center justify-center">
+                  <i class="fas fa-clock text-maroon-500 text-xl"></i>
+                </div>
+                <div>
+                  <h4 class="font-semibold text-gray-900 mb-1">Response Time</h4>
+                  <p class="text-gray-600">Typically within 4-6 business hours</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+
+    </div>
+
+    <!-- Additional contact info -->
+    <div class="mt-24 grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
+      <div class="p-6 bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200">
+        <div class="w-14 h-14 bg-maroon-50 rounded-full flex items-center justify-center mx-auto mb-4">
+          <i class="fas fa-phone-alt text-maroon-500 text-xl"></i>
+        </div>
+        <h4 class="font-bold text-gray-900 mb-2">Phone Support</h4>
+        <p class="text-gray-600">Available 9 AM - 6 PM GMT</p>
+      </div>
+      <div class="p-6 bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200">
+        <div class="w-14 h-14 bg-maroon-50 rounded-full flex items-center justify-center mx-auto mb-4">
+          <i class="fas fa-headset text-maroon-500 text-xl"></i>
+        </div>
+        <h4 class="font-bold text-gray-900 mb-2"> Chat</h4>
+        <p class="text-gray-600">Contact with our support team</p>
+      </div>
+      <div class="p-6 bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200">
+        <div class="w-14 h-14 bg-maroon-50 rounded-full flex items-center justify-center mx-auto mb-4">
+          <i class="fas fa-map-marker-alt text-maroon-500 text-xl"></i>
+        </div>
+        <h4 class="font-bold text-gray-900 mb-2">Office Location</h4>
+        <p class="text-gray-600">Visit our headquarters</p>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

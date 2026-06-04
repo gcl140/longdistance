@@ -1,0 +1,482 @@
+<!-- STATS -->
+    {% if news_items %}
+    <!-- NEWS / BREAKTHROUGHS -->
+    <section id="news" class="py-10 bg-maroon-500">
+      <div class="container mx-auto px-4">
+        <h2 class="uppercase text-3xl md:text-4xl font-extrabold text-white text-center mb-4 maroon-glow">
+          {{ content.news_title }}
+        </h2>
+        <p class="text-center mb-16 max-w-3xl mx-auto text-white">
+          {{ content.news_description }}
+        </p>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <!-- Card 1 -->
+           {% for new in news_items %}
+          <div class="group relative overflow-hidden rounded-2xl fade-in">
+            <div class="h-56 overflow-hidden">
+              {% if new.news_image %}
+              <img src="{{ new.news_image.url }}" 
+                  alt="{{ new.news_title }}"
+                  class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700">
+                  {% else %}
+              <img src="https://images.unsplash.com/photo-1559757148-5c350d0d3c56?ixlib=rb-4.0.3&auto=format&fit=crop&w=1548&q=80" 
+                  alt="Gene Therapy"
+                  class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700">
+              {% endif %}
+            </div>
+            <div class="absolute inset-0 bg-gradient-to-t from-black to-transparent opacity-80"></div>
+            <div class="absolute bottom-0 left-0 p-6">
+              <span class="text-black text-sm font-semibold bg-maroon-500/70 px-4 text-white uppercase">{{ new.news_type }}</span>
+              <h3 class="text-xl font-bold mt-2 text-white"><a href="{% url 'news_detail' new.pk %}">{{ new.news_title }}</a></h3>
+              <p class="text-sm mt-2 opacity-0 group-hover:opacity-100 transition-opacity duration-500 text-white">
+                {{ new.news_description | truncatewords:20 }}
+              </p>
+              <a href="{% url 'news_detail' new.pk %}" class="text-maroon-300 text-sm hover:text-maroon-300/50 font-semibold inline-flex items-center mt-4 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+                <span>Read More</span>
+                <i class="fas fa-arrow-right ml-2"></i>
+              </a>
+            </div>
+          </div>
+          {% empty %}
+          <p class="text-black text-sm text-center">No news articles available. To be added soon!</p>
+          {% endfor %}
+        </div>
+
+        <!-- View All News Button -->
+        <div class="text-center mt-12">
+          <a href="{% url 'all_news' %}"
+            class="
+
+            px-6 py-3 bg-white text-maroon-500 rounded-lg hover:bg-gold hover:text-voima-black transition-colors duration-300 inline-flex items-center
+            ">
+            <span>View All News</span>
+            <i class="fas fa-newspaper ml-2"></i>
+          </a>
+        </div>
+      </div>
+    </section>
+    {% endif %}
+    
+
+
+    <!-- TESTIMONIALS -->
+    <section id="testimonials" class="py-10 relative overflow-hidden bg-maroon-500">
+      <!-- Background elements -->
+      <div class="absolute inset-0 -z-10 opacity-10">
+        <div class="absolute top-1/4 left-10 w-72 h-72 bg-gold rounded-full mix-blend-multiply filter blur-xl animate-pulse-slow"></div>
+        <div class="absolute bottom-1/3 right-10 w-96 h-96 bg-gold rounded-full mix-blend-multiply filter blur-xl animate-pulse-slow animation-delay-2000"></div>
+      </div>
+      
+      <div class="max-w-7xl mx-auto px-6 relative">
+        <div class="text-center mb-16">
+          <h2 class="text-white uppercase text-3xl md:text-4xl font-extrabold maroon-glow" >
+            {{ content.testimonial_headline }}
+          </h2>
+          <p class="mt-4 text-white max-w-2xl mx-auto">
+            {{ content.testimonial_description }}
+          </p>
+        </div>
+
+        <!-- Asymmetrical slider container -->
+        <div class="relative" x-data="{
+          currentIndex: 0,
+          total: {{ testimonials|length }},
+          init() {
+            this.interval = setInterval(() => this.next(), 6000);
+          },
+          next() {
+            this.currentIndex = (this.currentIndex + 1) % this.total;
+          },
+          prev() {
+            this.currentIndex = (this.currentIndex - 1 + this.total) % this.total;
+          },
+          goTo(index) {
+            this.currentIndex = index;
+          },
+          pause() {
+            clearInterval(this.interval);
+          },
+          resume() {
+            this.interval = setInterval(() => this.next(), 6000);
+          }
+        }" @mouseenter="pause()" @mouseleave="resume()">
+          
+          <!-- Main slider with staggered layout -->
+          <div class="relative h-[550px] md:w-[85vh] md:h-[250px]">
+            <!-- Testimonial 1 -->
+
+             {% for testimonial in testimonials %}
+            <div class="absolute inset-0 transition-all duration-700 ease-in-out transform" 
+                :class="{
+                  'opacity-100 scale-100 z-30': currentIndex === {{ forloop.counter0 }},
+                  'opacity-0 scale-90 -translate-x-20 z-10': currentIndex !== {{ forloop.counter0 }}
+                }">
+              <div class="flex flex-col md:flex-row items-center  gap-8">
+                <!-- Profile image positioned uniquely -->
+                <div class="relative md:w-2/5 order-2 md:order-1">
+                  <div class="w-48 h-48 mx-auto md:ml-auto md:mr-0 rounded-2xl overflow-hidden shadow-2xl border-4 border-maroon-500 transform rotate-6 hover:rotate-0 transition-transform duration-500">
+
+                    
+                    {% if testimonial.author_image %}
+                    <img src="{{ testimonial.author_image.url }}" 
+                        alt="{{ testimonial.testimonial_author.first_name }}" class="w-full h-full object-cover">
+
+                    {% else%}
+
+                    <img src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80" 
+                        alt="Sarah" class="w-full h-full object-cover">
+                    {% endif %}
+                  </div>
+                  <!-- Decorative element -->
+                  <div class="absolute -bottom-6 -left-6 w-24 h-24 bg-gold/20 rounded-full -z-10"></div>
+                </div>
+                
+                <!-- Testimonial content -->
+                <div class="md:w-3/5 order-1 md:order-2 text-center md:text-left">
+                  <div class="glass p-8 rounded-2xl shadow-xl border bg-white border-maroon-500/20 relative w-[280px] md:w-[900px]">
+                    <!-- Quote icon -->
+                    <i class="fas fa-quote-left text-4xl text-white/30 absolute -top-4 -left-4"></i>
+
+                    <p class="text-2xl relative z-10 text-black italic font-island">"{{ testimonial.testimonial_content }}"</p>
+
+                    <div class="mt-6 flex flex-col md:flex-row items-center justify-between">
+                      <div>
+                        <div class="font-semibold text-black text-xl font-island">{{ testimonial.testimonial_author.first_name}} {{ testimonial.testimonial_author.last_name|slice:":1" }}.</div>
+                        <div class="text-sm text-black">{{ testimonial.author_location }}</div>
+                      </div>
+                      <div class="mt-4 md:mt-0">
+
+                        <div class="flex text-maroon-500">
+                          {% for _ in testimonial.stars %}
+                            <i class="fas fa-star"></i>
+                          {% endfor %}
+                          {% for _ in testimonial.empty_stars %}
+                            <i class="far fa-star"></i>
+                          {% endfor %}
+                        </div>
+
+
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            {% empty %}
+              <div class="text-center text-black">No testimonials available.</div>
+            {% endfor %}
+
+          </div>
+
+          <!-- Navigation controls -->
+          <div class="flex justify-center mt-12 space-x-4">
+            <button @click="prev()" class="w-12 h-12 rounded-full bg-voima-black/80 border border-maroon-500/30 flex items-center text-white justify-center hover:bg-gold hover:text-voima-black transition-all duration-300 shadow-lg transform hover:scale-110 focus:outline-none"  aria-label="Previous testimonial">
+              <i class="fas fa-chevron-left"></i>
+            </button>
+            
+            <!-- Indicators -->
+            <div class="flex items-center space-x-2 mx-4">
+              <template x-for="(dot, i) in total" :key="i">
+                <button @click="goTo(i)" :class="{'bg-white w-8': currentIndex === i, 'bg-gray-600 w-3': currentIndex !== i}"
+                        class="h-3 rounded-full transition-all duration-300 focus:outline-none" :aria-label="`Go to testimonial ${i+1}`"></button>
+              </template>
+            </div>
+            
+            <button @click="next()" class="w-12 h-12 rounded-full bg-voima-black/80 border border-maroon-500/30 flex items-center text-white  justify-center hover:bg-gold hover:text-voima-black transition-all duration-300 shadow-lg transform hover:scale-110 focus:outline-none"  aria-label="Next testimonial">
+              <i class="fas fa-chevron-right"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TEAM -->
+    <section id="team" class="py-14 bg-gradient-to-b from-transparent to-transparent">
+      <div class="max-w-7xl mx-auto px-6">
+        <div class="text-center mb-12">
+          <h2 class="uppercase text-3xl md:text-4xl font-extrabold maroon-glow">{{ content.team_title }}</h2>
+          <p class="mt-3 text-black max-w-2xl mx-auto">{{ content.team_description }}</p>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+          <!-- Team Card -->
+          {% for member in team_members %}
+          <div class="reveal glass p-6 rounded-2xl tilt text-center shadow-md">
+            {% if member.member_image %}
+            <img src="{{ member.member_image.url }}" alt="{{ member.member_name}}" class="w-32 h-32 mx-auto rounded-full object-cover border-4 border-maroon-400 shadow-lg">
+            {% else %}
+            <img src="https://picsum.photos/600/400?random=1" alt="{{ member.member_name}}" class="w-32 h-32 mx-auto rounded-full object-cover border-4 border-maroon-400 shadow-lg">
+            {% endif %}
+            <h3 class="mt-4 font-bold text-lg text-maroon-300"><a href="{% url 'team_member_detail' member.pk %}">{{ member.member_name }}</a></h3>
+            <p class="text-black text-sm">{{ member.member_role }}</p>
+            <div class="mt-3 flex justify-center gap-3 text-maroon-500 text-lg">
+              {% if member.linkedin_url %}
+              <a href="{{ member.linkedin_url }}" target="_blank" rel="noopener noreferrer"><i class="fab fa-linkedin"></i></a>
+              {% endif %}
+              {% if member.twitter_url %}
+              <a href="{{ member.twitter_url }}" target="_blank" rel="noopener noreferrer"><i class="fab fa-twitter"></i></a>
+              {% endif %}
+              {% if member.github_url %}
+              <a href="{{ member.github_url }}" target="_blank" rel="noopener noreferrer"><i class="fab fa-github"></i></a>
+              {% endif %}
+              {% if member.facebook_url %}
+              <a href="{{ member.facebook_url }}" target="_blank" rel="noopener noreferrer"><i class="fab fa-facebook"></i></a>
+              {% endif %}
+              {% if member.instagram_url %}
+              <a href="{{ member.instagram_url }}" target="_blank" rel="noopener noreferrer"><i class="fab fa-instagram"></i></a>
+              {% endif %}
+              {% if member.phone %}
+              <a href="tel:{{ member.phone }}"><i class="fas fa-phone-alt"></i></a>
+              {% endif %}
+            </div>
+          </div>
+          {% empty %}
+          <p class="text-black text-sm text-center">To be added Soon!</p>
+          {% endfor %}
+        </div>
+                        <!-- View All Services Button -->
+        <div class="text-center mt-12">
+          <a href="{% url 'all_team_members' %}"
+            class="
+            
+            
+            px-6 py-3 text-white rounded-lg hover:bg-gold hover:text-voima-black transition-colors duration-300 inline-flex items-center bg-maroon-500
+            ">
+            <span>View The Whole Team</span>
+            <i class="fas fa-users ml-2"></i>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- GALLERY -->
+
+        <!-- VIDEO GALLERY -->
+     {% if content.gallery_video %}
+    <section id="gallery" class="py-14 bg-maroon-500 relative overflow-hidden">
+      <!-- Animated background elements -->
+      <div class="absolute inset-0 opacity-10">
+        <div class="absolute top-0 left-0 w-72 h-72 bg-maroon-500 rounded-full filter blur-3xl animate-pulse-slow"></div>
+        <div class="absolute bottom-0 right-0 w-96 h-96 bg-maroon-600 rounded-full filter blur-3xl animate-pulse-slower"></div>
+      </div>
+      
+      <div class="max-w-7xl mx-auto px-6 relative z-10">
+        <div class="text-center mb-12">
+          <h2 class="uppercase text-3xl md:text-4xl font-extrabold maroon-glow text-white">{{ content.gallery_title }}</h2>
+          <p class="mt-3 text-white/90 max-w-2xl mx-auto">{{ content.gallery_description }}</p>
+        </div>
+
+        <!-- Video Player Section -->
+        <div class="mb-12 rounded-2xl overflow-hidden shadow-2xl transform hover:scale-[1.01] transition-transform duration-500">
+          <div class="relative pt-[56.25%] bg-black"> <!-- 16:9 Aspect Ratio -->
+            {% if content.gallery_video %}
+            <video 
+              id="galleryVideo" 
+              class="absolute inset-0 w-full h-full object-cover" 
+              poster="{% if content.gallery_video_thumbnail %}{{ content.gallery_video_thumbnail.url }}{% endif %}"
+              controls
+              preload="metadata"
+            >
+              <source src="{{ content.gallery_video.url }}" type="video/mp4">
+              Your browser does not support the video tag.
+            </video>
+            
+            <!-- Custom Video Controls -->
+            <div class="custom-video-controls absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 to-transparent p-4 opacity-0 transition-opacity duration-300">
+              <div class="flex items-center space-x-4">
+                <button id="playPause" class="text-white hover:text-maroon-300 transition-colors">
+                  <i class="fas fa-play text-xl"></i>
+                </button>
+                <div class="flex-1 h-2 bg-white/20 rounded-full overflow-hidden">
+                  <div id="progressBar" class="h-full bg-maroon-500" style="width: 0%"></div>
+                </div>
+                <div class="text-white text-sm">
+                  <span id="currentTime">0:00</span> / 
+                  <span id="duration">0:00</span>
+                </div>
+                <button id="muteUnmute" class="text-white hover:text-maroon-300 transition-colors">
+                  <i class="fas fa-volume-up text-xl"></i>
+                </button>
+                <button id="fullscreen" class="text-white hover:text-maroon-300 transition-colors">
+                  <i class="fas fa-expand text-xl"></i>
+                </button>
+              </div>
+            </div>
+            
+            <!-- Video overlay play button -->
+            <div id="videoOverlay" class="absolute inset-0 flex items-center justify-center bg-black/30 cursor-pointer transition-opacity duration-300">
+              <div class="w-20 h-20 rounded-full bg-maroon-500/90 flex items-center justify-center transform hover:scale-110 transition-transform">
+                <i class="fas fa-play text-3xl text-white ml-1"></i>
+              </div>
+            </div>
+            {% else %}
+            <div class="absolute inset-0 flex items-center justify-center bg-maroon-900">
+              <div class="text-center p-8">
+                <i class="fas fa-video-slash text-5xl text-maroon-300 mb-4"></i>
+                <p class="text-white text-xl">Video coming soon</p>
+              </div>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Video Info Section -->
+        {% if content.gallery_video %}
+        <div class="bg-white/5 backdrop-blur-sm rounded-xl p-6 mb-12 border border-white/10">
+          <h3 class="text-2xl font-bold text-white mb-3">{{ content.gallery_video_title|default:"Featured Video" }}</h3>
+          <p class="text-white/80">{{ content.gallery_video_description|default:"Experience our mission through this featured video content." }}</p>
+        </div>
+        {% endif %}
+
+        <!-- View All Gallery Button -->
+        <div class="text-center mt-12">
+          <a href="{% url 'all_gallery' %}" class="px-6 py-3 rounded-lg bg-white text-maroon-500 hover:bg-maroon-100 transition-all duration-300 inline-flex items-center transform hover:-translate-y-1 shadow-lg hover:shadow-xl">
+            <span>More from our Gallery</span>
+            <i class="fas fa-images ml-2"></i>
+          </a>
+        </div>
+      </div>
+    </section>
+    {% endif %}
+
+
+
+
+    {% if upcoming_events %}
+    <!-- EVENTS -->
+    <section id="events" class="py-14 bg-gradient-to-b from-transparent to-transparent">
+      <div class="max-w-7xl mx-auto px-6">
+        <div class="text-center mb-12">
+          <h2 class="uppercase text-3xl md:text-4xl font-extrabold maroon-glow" >{{ content.upcoming_events_title }}</h2>
+          <p class="mt-3 text-black max-w-2xl mx-auto">{{ content.upcoming_events_description }}</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+
+          <!-- Event Card -->
+           {% for event in upcoming_events %}
+          <div  class="backdrop-blur-sm border border-white/10 rounded-2xl p-6 hover:shadow-xl shadow-lg transition duration-500 group overflow-hidden">
+            <div class="relative">
+              {% if event.event_image %}
+              <img src="{{ event.event_image.url }}" alt="{{ event.event_title }}"
+                  class="rounded-xl w-full h-48 object-cover mb-4">
+              {% else %}
+              <img src="https://picsum.photos/600/400?random=10" alt="Future Health Expo"
+                  class="rounded-xl w-full h-48 object-cover mb-4">
+              {% endif %}
+
+              <div class="absolute top-4 left-4 bg-maroon-500 text-white px-3 py-1 text-sm font-bold">
+                {{ event.event_date }}
+              </div>
+            </div>
+            <h3 class="text-2xl font-bold mb-2 text-maroon-300 uppercase"><a href="{% url 'event_detail' event.pk %}">{{ event.event_title }}</a></h3>
+            <p class="text-black mb-4 text-sm">{{ event.event_description | truncatewords:20 }}</p>
+            {% if event.register_link %}
+            <a href="{{ event.register_link }}" class="text-maroon-500 font-semibold flex items-center justify-end text-sm group-hover:text-maroon-300 transition-colors">
+              Register <i class="fas fa-arrow-right ml-2"></i>
+            </a>
+          {% endif %}
+          </div>
+          {% empty %}
+          <p class="text-black text-sm text-center">No upcoming events</p>
+          {% endfor %}
+
+        </div>
+                        <!-- View All Services Button -->
+        <div class="text-center mt-12">
+          <a href="{% url 'all_events' %}"
+            class="
+            
+            
+            px-6 py-3 text-white rounded-lg hover:bg-gold hover:text-voima-black transition-colors duration-300 inline-flex items-center bg-maroon-500
+            "
+            
+            >
+            <span>View All Events</span>
+            <i class="fas fa-calendar-alt ml-2"></i>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    {% endif %}
+
+
+        <!-- CTA -->
+    {% if contribute_methods%}
+    <section class="py-10 bg-maroon-500 p-2" id="contribute">
+      <div class="max-w-4xl mx-auto px-6 text-center glass p-10 bg-white rounded-2xl ">
+        <h2 class="uppercase text-2xl md:text-3xl font-extrabold maroon-glow">{{ content.contribute_title }}</h2>
+        <p class="mt-3 text-black">{{ content.contribute_description }}</p>
+
+        <div class="mt-6 flex flex-wrap justify-center gap-4">
+          {% for method in contribute_methods %}
+          <a class="px-6 py-3 rounded-lg bg-transparent border border-maroon-500 text-maroon-500 hover:bg-maroon-500 hover:text-white focus-outline" href="{% url 'contribute_detail' method.pk %}">
+            <i class="fas fa-hand-holding-heart mr-2"></i> {{ method.method_name }}
+          </a>
+          {% empty %}
+          <p class="text-black text-sm">No contribution methods available</p>
+          {% endfor %}
+        </div>
+      </div>
+                      <!-- View All Services Button -->
+        <div class="text-center mt-12">
+          <a href="{% url 'all_contribute' %}"
+            class="
+            
+            px-6 py-3 rounded-lg hover:bg-gold hover:text-voima-black transition-colors duration-300 inline-flex items-center bg-white text-maroon-500
+            ">
+            <span>View All Contribution Methods</span>
+            <i class="fas fa-donate ml-2"></i>
+          </a>
+        </div>
+    </section> 
+    {% endif %}
+
+
+    <!-- FAQ -->
+    <section id="faq" class="py-10">
+      <div class="max-w-7xl mx-auto px-6">
+        <div class="text-center mb-12">
+          <h2 class="uppercase text-3xl md:text-4xl font-extrabold maroon-glow">
+            {{ content.faq_title }}
+          </h2>
+          <p class="mt-4 text-black max-w-2xl mx-auto">
+            {{ content.faq_sub_title }}
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 gap-6" id="faq-list" role="list">
+          <!-- Q1 -->
+           {% for faq in faqs %}
+          <div class="reveal glass p-6 rounded-2xl tilt shadow-sm">
+            <button class="w-full flex justify-between items-center text-left font-semibold" aria-expanded="false" aria-controls="faq{{faq.id}}" onclick="toggleFAQ(this)">
+              <span><a href="{% url 'faq_detail' faq.pk %}">{{ faq.faq_question }}</a></span>
+              <i class="fas fa-chevron-down transition-transform duration-300" aria-hidden="true"></i>
+            </button>
+            <div id="faq{{faq.id}}" class="faq-content max-h-0 overflow-hidden transition-all duration-500 ease-in-out" aria-hidden="true">
+              <p class="mt-4 text-black text-sm border-t pt-4 border-maroon-500/30">
+                {{ faq.faq_answer|truncatewords:20 }}
+              </p>
+            </div>
+          </div>
+          {% empty %}
+          <p class="text-black text-sm text-center">No FAQs available</p>
+          {% endfor %}
+
+        </div>
+                        <!-- View All Services Button -->
+        <div class="text-center mt-12">
+          <a href="{% url 'all_faqs' %}"
+            class="
+            
+            
+            px-6 py-3 text-white rounded-lg hover:bg-gold hover:text-voima-black transition-colors duration-300 inline-flex items-center bg-maroon-500
+            ">
+            <span>View All FAQs</span>
+            <i class="fas fa-question-circle ml-2"></i>
+          </a>
+        </div>
+      </div>
+    </section>

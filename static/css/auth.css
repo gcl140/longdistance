@@ -1,0 +1,16 @@
+/* Login/register/reset background + input focus ring. */
+.auth-bg {
+  background-color: #141414;
+  background-image:
+    linear-gradient(to top, rgba(0,0,0,.85) 0, rgba(0,0,0,.45) 50%, rgba(0,0,0,.85) 100%),
+    url("/static/images/bg.jpg");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+.nf-input { transition: all .2s ease; }
+.nf-input:focus { box-shadow: 0 0 0 2px rgba(229,9,20,.6); outline: none; }
+
+.form-input { transition: all .2s ease; }
+.form-input:focus { box-shadow: 0 0 0 2px rgba(229,9,20,.5); }

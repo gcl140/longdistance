@@ -1,0 +1,179 @@
+{% extends 'yuzzaz/full_base.html' %}{% block title %}| Home{% endblock %}
+{% load static %}
+{% block content %}
+<div x-data="home()" x-init="load()">
+
+<!-- ================= BILLBOARD HERO ================= -->
+<section id="home" class="relative h-[88vh] min-h-[560px] w-full overflow-hidden">
+  <img x-show="feat.backdrop || feat.poster" :src="feat.backdrop || feat.poster" x-cloak
+       class="absolute inset-0 w-full h-full object-cover object-center" alt="">
+  <img x-show="!(feat.backdrop || feat.poster)" src="https://picsum.photos/seed/lisahero/1600/900"
+       class="absolute inset-0 w-full h-full object-cover object-center" alt="">
+  <div class="absolute inset-0 nf-hero-fade"></div>
+
+  <div class="relative z-10 h-full flex items-end md:items-center">
+    <div class="px-4 md:px-12 pb-24 md:pb-0 max-w-2xl">
+
+      <!-- Featured trending movie (authenticated) -->
+      <template x-if="isAuth && feat.title">
+        <div>
+          <span class="text-netflix-red font-bold tracking-wide text-sm"><i class="fas fa-fire mr-1"></i>#1 Trending</span>
+          <h1 class="text-4xl md:text-6xl lg:text-7xl font-extrabold leading-none drop-shadow-2xl mt-2"
+              style="font-family:'Playfair Display',serif;" x-text="feat.title"></h1>
+          <div class="flex flex-wrap items-center gap-3 mt-3 text-sm text-white/80">
+            <span x-show="feat.rating" class="text-yellow-400"><i class="fas fa-star"></i> <span x-text="feat.rating ? feat.rating.toFixed(1) : ''"></span></span>
+            <span x-text="feat.year"></span>
+            <span class="uppercase border border-white/30 px-1.5 rounded text-xs" x-text="feat.media_type"></span>
+          </div>
+          <p class="mt-3 text-sm md:text-lg text-white/90 max-w-xl drop-shadow-lg line-clamp-3" x-text="feat.overview"></p>
+          <div class="mt-6 flex flex-wrap gap-3">
+            <template x-if="feat.in_library">
+              <button @click="feat.library_id ? openMovie(feat.library_id) : request(feat)" class="inline-flex items-center gap-2 px-6 md:px-8 py-3 rounded bg-netflix-red hover:bg-netflix-red/90 font-bold transition">
+                <i class="fas fa-play"></i> Watch
+              </button>
+            </template>
+            <template x-if="!feat.in_library">
+              <button @click="request(feat)" :disabled="feat.voted" class="inline-flex items-center gap-2 px-6 md:px-8 py-3 rounded bg-netflix-red hover:bg-netflix-red/90 font-bold transition disabled:opacity-70">
+                <i class="fas fa-plus"></i> <span x-text="feat.voted ? 'Requested' : 'Request this movie'"></span>
+              </button>
+            </template>
+            <a href="{% url 'parties:create' %}" class="inline-flex items-center gap-2 px-6 md:px-8 py-3 rounded bg-white/25 backdrop-blur hover:bg-white/35 font-semibold transition">
+              <i class="fas fa-plus"></i> New Party
+            </a>
+          </div>
+        </div>
+      </template>
+
+      <!-- Brand hero (anonymous, or before trending loads) -->
+      <template x-if="!(isAuth && feat.title)">
+        <div>
+          <h1 class="text-4xl md:text-6xl lg:text-7xl font-extrabold leading-none drop-shadow-2xl"
+              style="font-family:'Playfair Display',serif;">
+            Watch together,<br><span class="text-netflix-red">miles apart.</span>
+          </h1>
+          <p class="mt-4 text-base md:text-xl text-white/90 max-w-xl drop-shadow-lg">
+            Lisa syncs the movie, the chat, and the call — so movie night feels like you're on the same couch.
+          </p>
+          <div class="mt-6 flex flex-wrap items-center gap-3">
+            {% if user.is_authenticated %}
+              <a href="{% url 'parties:create' %}" class="inline-flex items-center gap-2 px-6 md:px-8 py-3 rounded bg-netflix-red hover:bg-netflix-red/90 text-white font-bold transition"><i class="fas fa-play"></i> Start a Party</a>
+              <a href="{% url 'parties:join' %}" class="inline-flex items-center gap-2 px-6 md:px-8 py-3 rounded bg-white/25 backdrop-blur hover:bg-white/35 font-semibold transition"><i class="fas fa-right-to-bracket"></i> Join with a code</a>
+            {% else %}
+              <a href="{% url 'register' %}" class="inline-flex items-center gap-2 px-6 md:px-8 py-3 rounded bg-netflix-red hover:bg-netflix-red/90 text-white font-bold transition"><i class="fas fa-play"></i> Get Started</a>
+              <a href="{% url 'login' %}" class="inline-flex items-center gap-2 px-6 md:px-8 py-3 rounded bg-white/25 backdrop-blur hover:bg-white/35 font-semibold transition"><i class="fas fa-circle-info"></i> Sign In</a>
+            {% endif %}
+          </div>
+        </div>
+      </template>
+    </div>
+  </div>
+</section>
+
+<div class="relative z-20 -mt-16 md:-mt-28 pb-10">
+
+  {% if user.is_authenticated %}
+  <!-- ===== Your Parties ===== -->
+  <section class="mt-6">
+    <div class="flex items-center justify-between px-4 md:px-12 mb-1">
+      <h2 class="text-lg md:text-2xl font-bold">Your Watch Parties</h2>
+      <a href="{% url 'parties:my_parties' %}" class="text-sm text-white/60 hover:text-white">See all <i class="fas fa-chevron-right text-xs"></i></a>
+    </div>
+    <div class="px-4 md:px-12">
+      <div class="row-scroller">
+        <a href="{% url 'parties:create' %}"
+           class="nf-card shrink-0 w-[160px] md:w-[260px] aspect-video rounded-md border-2 border-dashed border-white/20 hover:border-netflix-red flex flex-col items-center justify-center text-white/60 hover:text-white transition">
+          <i class="fas fa-plus text-2xl mb-1"></i><span class="text-sm font-semibold">New Party</span>
+        </a>
+        {% for party in my_parties %}
+        <a href="{% url 'parties:room' party.access_code %}"
+           class="nf-card group relative shrink-0 w-[160px] md:w-[260px] aspect-video rounded-md overflow-hidden bg-white/5">
+          <img src="{% if party.session.poster_url %}{{ party.session.poster_url }}{% else %}https://picsum.photos/seed/p{{ party.id }}/400/225{% endif %}" class="w-full h-full object-cover" alt="">
+          <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent flex items-end p-3">
+            <div>
+              <h3 class="text-sm font-bold leading-tight truncate">{{ party.name }}</h3>
+              <p class="text-[11px] text-white/60"><i class="fas fa-users mr-1"></i>{{ party.members.count }} · {{ party.access_code }}</p>
+            </div>
+          </div>
+        </a>
+        {% empty %}
+        <div class="flex items-center text-white/50 text-sm px-4">No active parties yet — start one!</div>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Upcoming (calendar snippet) ===== -->
+  <section class="mt-8 px-4 md:px-12">
+    <div class="flex items-center justify-between mb-3">
+      <h2 class="text-lg md:text-2xl font-bold"><i class="far fa-calendar text-netflix-red mr-2"></i>Upcoming</h2>
+      <a href="{% url 'schedule:calendar' %}" class="text-sm text-white/60 hover:text-white">Full calendar <i class="fas fa-chevron-right text-xs"></i></a>
+    </div>
+    {% if upcoming_parties %}
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+      {% for party in upcoming_parties %}
+      <a href="{% url 'parties:room' party.access_code %}"
+         class="group flex gap-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl p-3 transition">
+        <!-- Date chip -->
+        <div class="shrink-0 w-12 text-center rounded-lg overflow-hidden border border-white/10">
+          <div class="bg-netflix-red text-[10px] font-bold uppercase py-0.5">{{ party.scheduled_for|date:'M' }}</div>
+          <div class="text-xl font-extrabold leading-tight py-1">{{ party.scheduled_for|date:'j' }}</div>
+        </div>
+        <div class="min-w-0 flex-1">
+          <h3 class="text-sm font-semibold truncate">{{ party.name }}</h3>
+          {% if party.session.title %}<p class="text-xs text-white/50 truncate"><i class="fas fa-film mr-1"></i>{{ party.session.title }}</p>{% endif %}
+          <p class="text-xs text-white/40 mt-0.5"><i class="far fa-clock mr-1"></i>{{ party.scheduled_for|date:'D, g:i A' }}</p>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="bg-white/5 border border-white/10 rounded-xl p-6 flex flex-col sm:flex-row items-center justify-between gap-3">
+      <p class="text-white/50 text-sm"><i class="far fa-calendar-plus mr-2"></i>Nothing scheduled yet. Plan a movie night and it'll show up here.</p>
+      <a href="{% url 'parties:create' %}" class="shrink-0 text-sm font-semibold bg-netflix-red hover:bg-netflix-red/90 px-4 py-2 rounded transition">Schedule a party</a>
+    </div>
+    {% endif %}
+  </section>
+  {% else %}
+  <!-- ===== Anonymous: feature promo ===== -->
+  <section class="mt-8 px-4 md:px-12">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-6xl">
+      <div class="bg-white/5 border border-white/10 rounded-xl p-6"><i class="fas fa-clapperboard text-netflix-red text-2xl mb-3"></i><h3 class="font-bold text-lg">Synced playback</h3><p class="text-white/60 text-sm mt-1">Play, pause, and seek for everyone at once.</p></div>
+      <div class="bg-white/5 border border-white/10 rounded-xl p-6"><i class="fas fa-comments text-netflix-red text-2xl mb-3"></i><h3 class="font-bold text-lg">Live chat</h3><p class="text-white/60 text-sm mt-1">React in real time without pausing.</p></div>
+      <div class="bg-white/5 border border-white/10 rounded-xl p-6"><i class="fas fa-video text-netflix-red text-2xl mb-3"></i><h3 class="font-bold text-lg">Face to face</h3><p class="text-white/60 text-sm mt-1">See each other while you watch.</p></div>
+    </div>
+  </section>
+  {% endif %}
+
+  <!-- ===== Trending Now (clickable) ===== -->
+  <section class="mt-8" x-show="trending.length" x-cloak>
+    <h2 class="px-4 md:px-12 text-lg md:text-2xl font-bold mb-1">Trending Now</h2>
+    <div class="px-4 md:px-12">
+      <div class="row-scroller">
+        <template x-for="(m, i) in trending" :key="m.id">
+          <button @click="pick(m)" class="nf-card group relative shrink-0 w-[150px] md:w-[200px] aspect-[2/3] rounded-md overflow-hidden bg-white/5 text-left" :title="m.title">
+            <template x-if="m.poster"><img :src="m.poster" class="w-full h-full object-cover" alt=""></template>
+            <template x-if="!m.poster"><div class="w-full h-full flex items-center justify-center text-white/30"><i class="fas fa-film text-2xl"></i></div></template>
+            <span class="absolute -bottom-3 -left-2 text-7xl md:text-8xl font-black text-black/70 leading-none" style="-webkit-text-stroke:2px #808080;" x-text="i+1"></span>
+            <span x-show="m.in_library" class="absolute top-1 right-1 text-[9px] bg-netflix-red px-1.5 py-0.5 rounded font-bold">IN LIBRARY</span>
+          </button>
+        </template>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+{# Movie modal is mounted globally in full_base.html — window.openMovie is available here. #}
+</div>
+
+<script>
+  window.LISA_LAND = {
+    trendingUrl: "{% url 'catalog:trending' %}",
+    requestUrl: "{% url 'catalog:request' %}",
+    loginUrl: "{% url 'login' %}",
+    isAuth: {{ user.is_authenticated|yesno:"true,false" }},
+  };
+</script>
+<script src="{% static 'js/land.js' %}" defer></script>
+
+{% endblock %}

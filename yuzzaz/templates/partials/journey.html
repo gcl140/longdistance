@@ -1,0 +1,401 @@
+{% extends "yuzzaz/full_base.html" %}
+{% load static %}
+{% block title %}| Our Journey {% endblock %}
+{% block extra_head %}
+  <link rel="stylesheet" href="{% static 'css/team.css' %}">
+{% endblock %}
+{% block content %}
+
+
+{% include "partials/gallery.html" %}
+
+<!-- VIDEO GALLERY -->
+{% if content.gallery_video %}
+<section id="gallery" class="py-14 bg-maroon-500 relative overflow-hidden">
+  <!-- Animated background elements -->
+  <div class="absolute inset-0 opacity-10">
+    <div class="absolute top-0 left-0 w-72 h-72 bg-maroon-500 rounded-full filter blur-3xl animate-pulse-slow"></div>
+    <div class="absolute bottom-0 right-0 w-96 h-96 bg-maroon-600 rounded-full filter blur-3xl animate-pulse-slower"></div>
+  </div>
+  
+      <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- Header Section -->
+    <div class="text-center mb-16">
+      <div class="max-w-3xl mx-auto">
+        <p class="text-lg text-white/90 font-bold leading-relaxed">
+          {{ content.gallery_video_title |default:"Featured Video"}}
+        </p>
+      </div>
+      <div class="flex items-center justify-center gap-4 my-4">
+        <div class="h-px w-12 bg-white/50"></div>
+          <span class="text-sm text-white font-semibold tracking-widest uppercase">
+            SHORT VIDEO
+          </span>
+        <div class="h-px w-12 bg-white/50"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="max-w-7xl mx-auto px-6 relative z-10">
+
+    <!-- Video Player Section -->
+    <div class="mb-12 rounded-2xl overflow-hidden shadow-2xl transform hover:scale-[1.01] transition-transform duration-500">
+      <div class="relative pt-[56.25%] bg-black"> <!-- 16:9 Aspect Ratio -->
+        {% if content.gallery_video %}
+        <video 
+          id="galleryVideo" 
+          class="absolute inset-0 w-full h-full object-cover" 
+          poster="{% if content.gallery_video_thumbnail %}{{ content.gallery_video_thumbnail.url }}{% endif %}"
+          controls
+          preload="metadata"
+        >
+          <source src="{{ content.gallery_video.url }}" type="video/mp4">
+          Your browser does not support the video tag.
+        </video>
+        
+        <!-- Custom Video Controls -->
+        <div class="custom-video-controls absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 to-transparent p-4 opacity-0 transition-opacity duration-300">
+          <div class="flex items-center space-x-4">
+            <button id="playPause" class="text-white hover:text-maroon-300 transition-colors">
+              <i class="fas fa-play text-xl"></i>
+            </button>
+            <div class="flex-1 h-2 bg-white/20 rounded-full overflow-hidden">
+              <div id="progressBar" class="h-full bg-maroon-500" style="width: 0%"></div>
+            </div>
+            <div class="text-white text-sm">
+              <span id="currentTime">0:00</span> / 
+              <span id="duration">0:00</span>
+            </div>
+            <button id="muteUnmute" class="text-white hover:text-maroon-300 transition-colors">
+              <i class="fas fa-volume-up text-xl"></i>
+            </button>
+            <button id="fullscreen" class="text-white hover:text-maroon-300 transition-colors">
+              <i class="fas fa-expand text-xl"></i>
+            </button>
+          </div>
+        </div>
+        
+        <!-- Video overlay play button -->
+        <div id="videoOverlay" class="absolute inset-0 flex items-center justify-center bg-black/30 cursor-pointer transition-opacity duration-300">
+          <div class="w-20 h-20 rounded-full bg-maroon-500/90 flex items-center justify-center transform hover:scale-110 transition-transform">
+            <i class="fas fa-play text-3xl text-white ml-1"></i>
+          </div>
+        </div>
+        {% else %}
+        <div class="absolute inset-0 flex items-center justify-center bg-maroon-900">
+          <div class="text-center p-8">
+            <i class="fas fa-video-slash text-5xl text-maroon-300 mb-4"></i>
+            <p class="text-white text-xl">Video coming soon</p>
+          </div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Video Info Section -->
+    {% if content.gallery_video %}
+    <div class="bg-white/5 backdrop-blur-sm rounded-xl p-6 mb-2 border border-white/10">
+      <p class="text-white/80">{{ content.gallery_video_description|default:"Experience our mission through this featured video content." }}</p>
+    </div>
+    {% endif %}
+
+
+  </div>
+</section>
+{% endif %}
+
+{% if events_page %}
+<section class="max-w-7xl mx-auto px-6 py-12 pt-20">
+    <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Header Section -->
+        <div class="text-center mb-16">
+          <h2 class="text-4xl md:text-5xl text-maroon-500 lg:text-6xl font-bold font-playfair">
+            {{ content.upcoming_events_title }}
+          </h2>
+          <div class="flex items-center justify-center gap-4 my-4">
+            <div class="h-px w-12 bg-maroon-500/50"></div>
+            <span class="text-sm font-semibold tracking-widest uppercase">
+              EVENTS
+            </span>
+            <div class="h-px w-12 bg-maroon-500/50"></div>
+          </div>
+          <div class="max-w-3xl mx-auto">
+            <p class="text-lg text-black/90 leading-relaxed">
+              {{ content.upcoming_events_description }}
+            </p>
+          </div>
+        </div>
+    </div>
+  {% for event in events_page %}
+    <article class="flex flex-col lg:flex-row gap-10 items-stretch border-t py-14 border-maroon-500/10">
+
+          <!-- Date -->
+          <div class="relative flex lg:flex-col items-center lg:items-start min-w-[90px] overflow-hidden md:overflow-visible h-12 md:h-auto">
+            
+            <!-- YEAR (INTENSE) -->
+            <span class="
+              absolute lg:bottom-0 
+              lg:left-[825px]
+              lg:bottom-[0px]
+              left-[150px]
+              bottom-[5px]
+              translate-x-1/4 translate-y-1/4
+              md:text-[9rem]
+              text-[3rem] 
+              xl:text-[9rem]
+              font-extrabold leading-none
+              text-transparent
+              stroke-year
+              pointer-events-none
+              select-none
+              opacity-20
+                "
+              style=""
+            >
+              {{ event.event_date|date:"Y" }}
+            </span>
+
+            <!-- MONTH -->
+            <span class="relative z-10 text-lg sm:text-xl font-semibold text-maroon-500 tracking-widest uppercase">
+              {{ event.event_date|date:"M" }}
+            </span>
+
+            <span class="relative z-10 w-8 h-px bg-maroon-500/40 my-3"></span>
+
+            <!-- DAY -->
+            <span class="relative z-10 text-3xl sm:text-4xl font-bold text-gray-800">
+              {{ event.event_date|date:"d" }}
+            </span>
+          </div>
+          
+          <!-- Image -->
+          <a href="{% url 'event_detail' event.pk %}" class="relative block flex-shrink-0 w-full lg:w-[520px]">
+            <div class="aspect-[16/9] rounded-3xl overflow-hidden bg-black">
+              <img
+                src="{% if event.event_image %}{{ event.event_image.url }}{% else %}{% static 'images/fav.png' %}{% endif %}"
+                alt=""
+                class="w-full h-full object-cover"
+              />
+            </div>
+          </a>
+
+          <!-- Content -->
+          <div class="flex flex-col justify-between py-2 max-w-xl">
+            <div>
+              <h3 class="text-2xl font-semibold text-gray-900 leading-snug mb-4">
+                <a href="{% url 'event_detail' event.pk %}" class="hover:underline">
+                  {{ event.event_title }}
+                </a>
+              </h3>
+
+              <p class="text-gray-500 text-base leading-relaxed">
+                {{ event.event_description|truncatewords:30 }}
+              </p>
+            </div>
+
+            <!-- CTA -->
+              {% if event.register_link %}
+            <a
+              href="{{ event.register_link }}"
+              class="inline-flex items-center gap-3 mt-8 w-fit px-6 py-3 rounded-full
+                      bg-maroon-500 text-white font-medium
+                      hover:bg-maroon-700 transition"
+            >
+              Join Us
+              <span class="inline-flex items-center  justify-center w-8 h-8 rounded-full border border-white">
+                →
+              </span>
+            </a>
+            {% else %}
+                  <a
+              href="{% url 'event_detail' event.pk %}"
+              class="inline-flex items-center gap-3 mt-8 w-fit px-6 py-3 rounded-full
+                      bg-maroon-500 text-white font-medium
+                      hover:bg-maroon-700 transition"
+            >
+              Read More
+              <span class="inline-flex items-center  justify-center w-8 h-8 rounded-full border border-white">
+                →
+              </span>
+            </a>
+            {% endif %}
+          </div>
+
+    </article>
+  {% empty %}
+    <p class="text-gray-600 text-center">No events available at the moment.</p>
+  {% endfor %}
+
+  {% if events_page.has_other_pages %}
+    <div class="flex justify-center items-center gap-6 py-10">
+      
+        {% if events_page.has_previous %}
+        <a href="?events_page={{ events_page.previous_page_number }}"
+          class="group flex items-center gap-2 px-5 py-2 rounded-full border border-maroon-500/30 text-maroon-500/90 bg-white/10
+                  hover:bg-maroon-500 hover:text-gray-300 transition-all duration-300">
+          <i class="fas fa-arrow-left text-xs group-hover:-translate-x-0.5 transition"></i>
+          Prev
+        </a>
+        {% endif %}
+
+        <span class="text-sm tracking-wider uppercase text-maroon-500/80">
+          Page {{ events_page.number }} of {{ events_page.paginator.num_pages }}
+        </span>
+
+        {% if events_page.has_next %}
+        <a href="?events_page={{ events_page.next_page_number }}"
+          class="group flex items-center gap-2 px-5 py-2 rounded-full border border-maroon-500/30 text-maroon-500/90 bg-white/10
+                  hover:bg-maroon-500 hover:text-gray-300 transition-all duration-300">
+          Next
+          <i class="fas fa-arrow-right text-xs group-hover:translate-x-0.5 transition"></i>
+        </a>
+        {% endif %}
+
+    </div>
+  {% endif %}
+</section>
+{% endif %}
+
+
+<!-- FAQ -->
+{% if faq_page %}
+  <section id="faq" class="relative text-white py-20 bg-maroon-500 overflow-hidden">
+    <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <!-- Header Section -->
+      <div class="text-center mb-16">
+        <h2 class="text-4xl md:text-5xl text-white lg:text-6xl font-bold font-playfair">
+          {{ content.faq_title }}
+        </h2>
+        <div class="flex items-center justify-center gap-4 my-4">
+          <div class="h-px w-12 bg-white/50"></div>
+          <span class="text-sm font-semibold tracking-widest uppercase">
+            FAQs
+          </span>
+          <div class="h-px w-12 bg-white/50"></div>
+        </div>
+        <div class="max-w-3xl mx-auto">
+          <p class="text-lg text-white/90 leading-relaxed">
+            {{ content.faq_sub_title }}
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="max-w-7xl mx-auto px-6">
+      <div class="grid grid-cols-1 gap-6" id="faq-list" role="list">
+        <!-- Q1 -->
+          {% for faq in faq_page %}
+        <div class="reveal glass p-6 rounded-2xl tilt shadow-sm">
+          <button class="w-full flex justify-between items-center text-left font-semibold" aria-expanded="false" aria-controls="faq{{faq.id}}" onclick="toggleFAQ(this)">
+            <span><a href="{% url 'faq_detail' faq.pk %}">{{ faq.faq_question }}</a></span>
+            <i class="fas fa-chevron-down transition-transform duration-300" aria-hidden="true"></i>
+          </button>
+          <div id="faq{{faq.id}}" class="faq-content max-h-0 overflow-hidden transition-all duration-500 ease-in-out" aria-hidden="true">
+            <p class="mt-4 text-black text-sm border-t pt-4 border-maroon-500/30 text-white/80 ">
+              {{ faq.faq_answer|truncatewords:20 }}
+            </p>
+          </div>
+        </div>
+        {% empty %}
+        <p class="text-black text-sm text-center">No FAQs available</p>
+        {% endfor %}
+
+      </div>
+    </div>
+    
+  </section>
+  {% if faq_page.has_other_pages %}
+    <div class="flex justify-center items-center gap-6 py-10">
+      
+        {% if faq_page.has_previous %}
+        <a href="?faq_page={{ faq_page.previous_page_number }}"
+          class="group flex items-center gap-2 px-5 py-2 rounded-full border border-maroon-500/30 text-maroon-500/90 bg-white/10
+                  hover:bg-maroon-500 hover:text-gray-300 transition-all duration-300">
+          <i class="fas fa-arrow-left text-xs group-hover:-translate-x-0.5 transition"></i>
+          Prev
+        </a>
+        {% endif %}
+
+        <span class="text-sm tracking-wider uppercase text-maroon-500/80">
+          Page {{ faq_page.number }} of {{ faq_page.paginator.num_pages }}
+        </span>
+
+        {% if faq_page.has_next %}
+        <a href="?faq_page={{ faq_page.next_page_number }}"
+          class="group flex items-center gap-2 px-5 py-2 rounded-full border border-maroon-500/30 text-maroon-500/90 bg-white/10
+                  hover:bg-maroon-500 hover:text-gray-300 transition-all duration-300">
+          Next
+          <i class="fas fa-arrow-right text-xs group-hover:translate-x-0.5 transition"></i>
+        </a>
+        {% endif %}
+
+    </div>
+  {% endif %}  
+{% endif %}
+
+<!-- TEAM -->
+{% if team_page %}
+<section id="team" class="py-14 bg-gradient-to-b from-transparent to-transparent">
+    <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- Header Section -->
+    <div class="text-center mb-16">
+      <h2 class="text-4xl md:text-5xl text-maroon-500 lg:text-6xl font-bold font-playfair">
+        {{ content.team_title }}
+      </h2>
+      <div class="flex items-center justify-center gap-4 my-4">
+        <div class="h-px w-12 bg-maroon-500/50"></div>
+        <span class="text-sm font-semibold tracking-widest uppercase">
+          TEAM
+        </span>
+        <div class="h-px w-12 bg-maroon-500/50"></div>
+      </div>
+      <div class="max-w-3xl mx-auto">
+        <p class="text-lg text-black/90 leading-relaxed">
+          {{ content.team_description }}
+        </p>
+      </div>
+    </div>
+  </div>
+  <div class="max-w-7xl mx-auto px-6">
+
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+      <!-- Team Card -->
+      {% for member in team_page %}
+      {% include "partials/team.html"%}
+      {% empty %}
+      <p class="text-black text-sm text-center">To be added Soon!</p>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+  {% if team_page.has_other_pages %}
+    <div class="flex justify-center items-center gap-6 py-10">
+      
+        {% if team_page.has_previous %}
+        <a href="?team_page={{ team_page.previous_page_number }}"
+          class="group flex items-center gap-2 px-5 py-2 rounded-full border border-maroon-500/30 text-maroon-500/90 bg-white/10
+                  hover:bg-maroon-500 hover:text-gray-300 transition-all duration-300">
+          <i class="fas fa-arrow-left text-xs group-hover:-translate-x-0.5 transition"></i>
+          Prev
+        </a>
+        {% endif %}
+
+        <span class="text-sm tracking-wider uppercase text-maroon-500/80">
+          Page {{ team_page.number }} of {{ team_page.paginator.num_pages }}
+        </span>
+
+        {% if team_page.has_next %}
+        <a href="?team_page={{ team_page.next_page_number }}"
+          class="group flex items-center gap-2 px-5 py-2 rounded-full border border-maroon-500/30 text-maroon-500/90 bg-white/10
+                  hover:bg-maroon-500 hover:text-gray-300 transition-all duration-300">
+          Next
+          <i class="fas fa-arrow-right text-xs group-hover:translate-x-0.5 transition"></i>
+        </a>
+        {% endif %}
+
+    </div>
+  {% endif %}  
+{% endif %}
+{% endblock %}

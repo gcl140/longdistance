@@ -1,0 +1,33 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Project-wide design tokens that used to live in inline <style> blocks. */
+
+/* Netflix-style horizontal scrolling rows */
+.row-scroller {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  padding: 0.5rem 0;
+}
+.row-scroller::-webkit-scrollbar { display: none; }
+
+.nf-card { transition: transform .35s ease, box-shadow .35s ease; }
+.nf-card:hover {
+  transform: scale(1.08);
+  z-index: 20;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .7);
+}
+
+.nf-hero-fade {
+  background:
+    linear-gradient(to right, rgba(20, 20, 20, 1) 0%, rgba(20, 20, 20, .6) 35%, rgba(20, 20, 20, 0) 70%),
+    linear-gradient(to top, rgba(20, 20, 20, 1) 0%, rgba(20, 20, 20, 0) 40%);
+}
+
+/* x-cloak utility — Alpine hides elements with this attribute until init. */
+[x-cloak] { display: none !important; }

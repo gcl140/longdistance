@@ -1,0 +1,142 @@
+{% extends "discussion/base.html" %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block title %}Ask a Question{% endblock %}
+
+{% block content %}
+<div class="bg-dark rounded-lg border border-gray-800 overflow-hidden">
+    <div class="p-4 border-b border-gray-800">
+        <h3 class="font-bold text-lg text-center text-maroon">
+            <i class="fas fa-plus-circle mr-2"></i>Create New Post
+        </h3>
+    </div>
+    <form method="post" enctype="multipart/form-data" class="p-4">
+        {% csrf_token %}
+        
+        <!-- Title -->
+        <div class="mb-3">
+            {% render_field form.title class=form.title.field.widget.attrs.class %}
+            {% if form.title.errors %}
+                <div class="text-red-500 text-xs mt-1">{{ form.title.errors }}</div>
+            {% endif %}
+        </div>
+
+        <!-- Content -->
+        <div class="mb-3">
+            {% render_field form.content class=form.content.field.widget.attrs.class %}
+            {% if form.content.errors %}
+                <div class="text-red-500 text-xs mt-1">{{ form.content.errors }}</div>
+            {% endif %}
+        </div>
+
+        <!-- Attachment Buttons -->
+        <div class="flex justify-end space-x-4 mb-4">
+            <button type="button" onclick="toggleAttachment('image')" class="attachment-btn focus:outline-none focus:ring-2 focus:ring-maroon focus:ring-opacity-50 flex items-center justify-center w-10 h-10 rounded-lg transition-colors duration-200 bg-gray-800 hover:bg-gray-700 text-maroon">
+                <i class="fas fa-image"></i>
+            </button>
+            <button type="button" onclick="toggleAttachment('video')" class="attachment-btn focus:outline-none focus:ring-2 focus:ring-maroon focus:ring-opacity-50 flex items-center justify-center w-10 h-10 rounded-lg transition-colors duration-200 bg-gray-800 hover:bg-gray-700 text-maroon">
+                <i class="fas fa-video"></i>
+            </button>
+            <button type="button" onclick="toggleAttachment('doc')" class="attachment-btn focus:outline-none focus:ring-2 focus:ring-maroon focus:ring-opacity-50 flex items-center justify-center w-10 h-10 rounded-lg transition-colors duration-200 bg-gray-800 hover:bg-gray-700 text-maroon">
+                <i class="fas fa-file-alt"></i>
+            </button>
+            <button type="button" onclick="toggleAttachment('link')" class="attachment-btn focus:outline-none focus:ring-2 focus:ring-maroon focus:ring-opacity-50 flex items-center justify-center w-10 h-10 rounded-lg transition-colors duration-200 bg-gray-800 hover:bg-gray-700 text-maroon">
+                <i class="fas fa-link"></i>
+            </button>
+        </div>
+
+        <!-- Link Field (Initially Hidden) -->
+        <div id="link-field" class="mb-3 hidden">
+                    <div class="text-xs text-gray-400 mb-1">Attach a link</div>
+
+            {% render_field form.link class=form.link.field.widget.attrs.class %}
+            {% if form.link.errors %}
+                <div class="text-red-500 text-xs mt-1">{{ form.link.errors }}</div>
+            {% endif %}
+        </div>
+
+        <!-- File Upload Fields (Initially Hidden) -->
+        <div id="file-upload-fields" class="hidden">
+            <!-- Image Upload -->
+            <div id="image-field" class="mb-3 hidden">
+                <label class="block">
+                    <div class="text-xs text-gray-400 mb-1">Upload Image</div>
+                    <div class="flex items-center gap-2 bg-gray-800 rounded-lg px-3 py-2 cursor-pointer hover:bg-gray-700 transition">
+                        <i class="fas fa-image text-maroon"></i>
+                        <span class="text-sm text-gray-300 truncate" id="image-filename">
+                            {% if form.instance.image %} 
+                                {{ form.instance.image.name|cut:"posts/" }}
+                            {% else %}
+                                No file selected
+                            {% endif %}
+                        </span>
+                        {% render_field form.image class="hidden" id="image-upload" %}
+                    </div>
+                    {% if form.image.errors %}
+                        <div class="text-red-500 text-xs mt-1">{{ form.image.errors }}</div>
+                    {% endif %}
+                </label>
+            </div>
+
+            <!-- Video Upload -->
+            <div id="video-field" class="mb-3 hidden">
+                <label class="block">
+                    <div class="text-xs text-gray-400 mb-1">Upload Video</div>
+                    <div class="flex items-center gap-2 bg-gray-800 rounded-lg px-3 py-2 cursor-pointer hover:bg-gray-700 transition">
+                        <i class="fas fa-video text-maroon"></i>
+                        <span class="text-sm text-gray-300 truncate" id="video-filename">
+                            {% if form.instance.video %} 
+                                {{ form.instance.video.name|cut:"posts/" }}
+                            {% else %}
+                                No file selected
+                            {% endif %}
+                        </span>
+                        {% render_field form.video class="hidden" id="video-upload" %}
+                    </div>
+                    {% if form.video.errors %}
+                        <div class="text-red-500 text-xs mt-1">{{ form.video.errors }}</div>
+                    {% endif %}
+                </label>
+            </div>
+
+            <!-- Document Upload -->
+            <div id="doc-field" class="mb-3 hidden">
+                <label class="block">
+                    <div class="text-xs text-gray-400 mb-1">Upload Document</div>
+                    <div class="flex items-center gap-2 bg-gray-800 rounded-lg px-3 py-2 cursor-pointer hover:bg-gray-700 transition">
+                        <i class="fas fa-file-alt text-maroon"></i>
+                        <span class="text-sm text-gray-300 truncate" id="docs-filename">
+                            {% if form.instance.docs %} 
+                                {{ form.instance.docs.name|cut:"posts/" }}
+                            {% else %}
+                                No file selected
+                            {% endif %}
+                        </span>
+                        {% render_field form.docs class="hidden" id="docs-upload" %}
+                    </div>
+                    {% if form.docs.errors %}
+                        <div class="text-red-500 text-xs mt-1">{{ form.docs.errors }}</div>
+                    {% endif %}
+                </label>
+            </div>
+        </div>
+
+        <!-- Tag Selector -->
+        <div class="mb-3">
+            {% render_field form.tag class=form.tag.field.widget.attrs.class %}
+            {% if form.tag.errors %}
+                <div class="text-red-500 text-xs mt-1">{{ form.tag.errors }}</div>
+            {% endif %}
+        </div>
+
+        <!-- Submit Button -->
+        <button type="submit" class="w-full bg-maroon hover:bg-maroon-dark text-white py-2 px-4 rounded-lg font-medium transition">
+            <i class="fas fa-paper-plane mr-2"></i> Post
+        </button>
+    </form>
+</div>
+
+<script src="{% static 'js/add_post_modal.js' %}" defer></script>
+
+{% endblock %}

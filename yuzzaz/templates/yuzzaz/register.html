@@ -1,0 +1,129 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="google-site-verification" content="wEtt2II-thlRgNpqM24dfMRBAooIPCGV-CH6d56R-WY" />
+  <meta name="msvalidate.01" content="DEE2AF02ED59562E2DCA645D7F9B738F" />
+  <title>Sign Up | Lisa</title>
+
+  <link rel="shortcut icon" href="{% static 'images/fav.png' %}" type="image/x-icon">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400..800&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css" />
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+
+  <link rel="stylesheet" href="{% static 'css/tailwind.css' %}">
+  <link rel="stylesheet" href="{% static 'css/auth.css' %}">
+</head>
+<body class="auth-bg font-karla text-white min-h-screen">
+
+  <!-- Brand -->
+  <header class="absolute inset-x-0 top-0 z-20">
+    <div class="px-6 md:px-12 py-5">
+      <a href="{% url 'home' %}" class="text-netflix-red font-extrabold text-3xl md:text-4xl uppercase"
+         style="letter-spacing:-.04em;">LISA</a>
+    </div>
+  </header>
+
+  <main class="relative z-10 min-h-screen flex items-center justify-center px-4 py-24">
+    <div class="w-full max-w-2xl bg-black/75 rounded-md shadow-2xl px-8 sm:px-14 py-12">
+      <h1 class="text-3xl font-bold mb-1">Sign Up</h1>
+      <p class="text-gray-400 mb-7">Create your account to start streaming.</p>
+
+      <form method="POST" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {% csrf_token %}
+
+        {% for field in form %}
+        <div class="{% if field.field.widget.input_type == 'checkbox' or field.field.widget.input_type == 'email' or 'tel' in field.name or 'phone' in field.name %}sm:col-span-2{% endif %}">
+          {% if field.field.widget.input_type == "checkbox" %}
+            {% if user_type == "intern" %}
+            <label class="flex items-start gap-2 text-sm text-gray-300">
+              <input type="checkbox" id="{{ field.id_for_label }}" name="{{ field.html_name }}"
+                     class="accent-netflix-red h-5 w-5 mt-0.5" required />
+              <span>I will be applying for an Internship position</span>
+            </label>
+            {% endif %}
+          {% else %}
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                {% if field.field.widget.input_type == "email" %}
+                  <i class="fas fa-envelope"></i>
+                {% elif field.field.widget.input_type == "password" %}
+                  <i class="fas fa-lock"></i>
+                {% else %}
+                  <i class="fas fa-user"></i>
+                {% endif %}
+              </div>
+              <input
+                type="{{ field.field.widget.input_type|default:'text' }}"
+                id="{{ field.id_for_label }}"
+                name="{{ field.html_name }}"
+                value="{{ field.value|default_if_none:'' }}"
+                placeholder="{{ field.label }}"
+                class="nf-input w-full bg-[#333] text-white placeholder-gray-400 rounded pl-10 pr-12 py-3.5 border border-transparent focus:border-gray-500"
+                {% for attr, value in field.field.widget.attrs.items %}{{ attr }}="{{ value }}"{% endfor %}
+                required
+              />
+              {% if field.field.widget.input_type == "password" %}
+              <button type="button" tabindex="-1" onclick="togglePw(this)" aria-label="Show password"
+                      class="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-white">
+                <i class="fas fa-eye"></i>
+              </button>
+              {% endif %}
+            </div>
+            {% if field.errors %}
+            <p class="mt-1 text-sm text-red-500">{{ field.errors|join:', ' }}</p>
+            {% endif %}
+          {% endif %}
+        </div>
+        {% endfor %}
+
+        <!-- Submit -->
+        <button type="submit"
+                class="sm:col-span-2 w-full bg-netflix-red hover:bg-netflix-red/90 text-white font-semibold py-3 rounded transition">
+          Sign Up
+        </button>
+
+        <!-- Divider -->
+        <div class="sm:col-span-2 flex items-center my-2">
+          <hr class="flex-grow border-gray-600/50" />
+          <span class="mx-4 text-gray-500 text-sm">OR</span>
+          <hr class="flex-grow border-gray-600/50" />
+        </div>
+
+        <!-- Google -->
+        <a class="sm:col-span-2" href="{% if not user.is_authenticated %}{% url 'social:begin' 'google-oauth2' %}?next={% url 'home' %}{% else %}{% url 'set_user_type_and_login' %}{% endif %}">
+          <button type="button"
+                  class="w-full bg-white/10 hover:bg-white/20 text-white py-3 rounded transition flex items-center justify-center gap-2">
+            <i class="fab fa-google text-red-500"></i> Continue with Google
+          </button>
+        </a>
+      </form>
+
+      <p class="mt-8 text-gray-400">
+        Already have an account?
+        <a href="{% url 'login' %}" class="text-white hover:underline font-medium">Sign in</a>.
+      </p>
+    </div>
+  </main>
+
+  <footer class="relative z-10 text-center text-white/50 text-xs pb-8">
+    © {% now "Y" %} Lisa. All rights reserved.
+  </footer>
+
+  {% if messages %}
+  <script>
+    window.LISA_MESSAGES = [
+      {% for message in messages %}{ text: {{ message|escapejs|stringformat:'"%s"' }}, tag: "{{ message.tags|default:'info' }}" }{% if not forloop.last %},{% endif %}{% endfor %}
+    ];
+  </script>
+  <script src="{% static 'js/toasts.js' %}" defer></script>
+  {% endif %}
+  <script src="{% static 'js/password_reset_confirm.js' %}" defer></script>
+</body>
+</html>

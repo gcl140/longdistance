@@ -216,3 +216,9 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+junk/
+media/
+node_modules/
+staticfiles/
+.DS_Store
+**/.DS_Store

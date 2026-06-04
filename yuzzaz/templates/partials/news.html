@@ -1,0 +1,293 @@
+{% extends "yuzzaz/full_base.html" %}
+{% load static %}
+{% block title %}| Blog{% endblock %}
+
+{% block content %}
+
+    <!-- TESTIMONIALS -->
+    <section id="testimonials" class="py-10 pb-60 md:pb-10 relative overflow-hidden bg-maroon-500">
+      <!-- Background elements -->
+      <div class="absolute inset-0 -z-10 opacity-10">
+        <div class="absolute top-1/4 left-10 w-72 h-72 bg-gold rounded-full mix-blend-multiply filter blur-xl animate-pulse-slow"></div>
+        <div class="absolute bottom-1/3 right-10 w-96 h-96 bg-gold rounded-full mix-blend-multiply filter blur-xl animate-pulse-slow animation-delay-2000"></div>
+      </div>
+      <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Header Section -->
+        <div class="text-center mb-16">
+          <h2 class="text-4xl text-white md:text-5xl lg:text-6xl font-bold font-playfair">
+            {{ content.testimonial_headline }}
+          </h2>
+          <div class="flex items-center justify-center gap-4 my-4">
+            <div class="h-px w-12 bg-white/50"></div>
+            <span class="text-sm text-white font-semibold tracking-widest uppercase">
+              TESTIMONIALS
+            </span>
+            <div class="h-px w-12 bg-white/50"></div>
+          </div>
+          <div class="max-w-3xl mx-auto">
+            <p class="text-lg text-white/90 leading-relaxed">
+                {{ content.testimonial_description }}
+
+            </p>
+          </div>
+        </div>
+      </div>
+      
+      <div class="max-w-7xl mx-auto px-6 relative">
+        <!-- Asymmetrical slider container -->
+        <div class="relative" x-data="{
+          currentIndex: 0,
+          total: {{ testimonials|length }},
+          init() {
+            this.interval = setInterval(() => this.next(), 6000);
+          },
+          next() {
+            this.currentIndex = (this.currentIndex + 1) % this.total;
+          },
+          prev() {
+            this.currentIndex = (this.currentIndex - 1 + this.total) % this.total;
+          },
+          goTo(index) {
+            this.currentIndex = index;
+          },
+          pause() {
+            clearInterval(this.interval);
+          },
+          resume() {
+            this.interval = setInterval(() => this.next(), 6000);
+          }
+        }" @mouseenter="pause()" @mouseleave="resume()">
+          
+          <!-- Main slider with staggered layout -->
+          <div class="relative h-[550px] md:w-[85vh] md:h-[250px]">
+            <!-- Testimonial 1 -->
+
+             {% for testimonial in testimonials %}
+            <div class="absolute inset-0 transition-all duration-700 ease-in-out transform" 
+                :class="{
+                  'opacity-100 scale-100 z-30': currentIndex === {{ forloop.counter0 }},
+                  'opacity-0 scale-90 -translate-x-20 z-10': currentIndex !== {{ forloop.counter0 }}
+                }">
+              <div class="flex flex-col md:flex-row items-center  gap-8">
+                <!-- Profile image positioned uniquely -->
+                <div class="relative md:w-2/5 order-2 md:order-1">
+                  <div class="w-48 h-48 mx-auto md:ml-auto md:mr-0 rounded-2xl overflow-hidden shadow-2xl border-4 border-maroon-500 transform rotate-0 hover:rotate-6 transition-transform duration-500">
+
+                    
+                    {% if testimonial.author_image %}
+                    <img src="{{ testimonial.author_image.url }}" 
+                        alt="{{ testimonial.testimonial_author }}" class="w-full h-full object-cover">
+
+                    {% else%}
+
+                    <img src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80" 
+                        alt="Sarah" class="w-full h-full object-cover">
+                    {% endif %}
+                  </div>
+                  <!-- Decorative element -->
+                  <div class="absolute -bottom-6 -left-6 w-24 h-24 bg-gold/20 rounded-full -z-10"></div>
+                </div>
+                
+                <!-- Testimonial content -->
+                <div class="md:w-3/5 order-1 md:order-2 text-center md:text-left">
+                  <div class="glass p-8 rounded-2xl shadow-xl border bg-white border-maroon-500/20 relative w-[280px] md:w-[900px]">
+                    <!-- Quote icon -->
+                    <i class="fas fa-quote-left text-6xl text-white/30 absolute -top-8 -left-4"></i>
+
+                    <p class="text-2xl relative z-10 text-black italic font-playfair">{{ testimonial.testimonial_content }}</p>
+
+                    <div class="mt-6 flex flex-col md:flex-row items-center justify-between">
+                      <div>
+                        <div class="font-semibold text-black text-xl font-island">{{ testimonial.testimonial_author}}.</div>
+                        <div class="text-sm text-black">{{ testimonial.author_location }}</div>
+                      </div>
+                      <div class="mt-4 md:mt-0">
+
+                        <div class="flex text-maroon-500">
+                          {% for _ in testimonial.stars %}
+                            <i class="fas fa-star"></i>
+                          {% endfor %}
+                          {% for _ in testimonial.empty_stars %}
+                            <i class="far fa-star"></i>
+                          {% endfor %}
+                        </div>
+
+
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            {% empty %}
+                <div class="col-span-full flex flex-col items-center justify-center py-4 px-6">
+                  <div class="bg-maroon-50 rounded-full p-6 mb-4">
+                      <i class="fas fa-concierge-bell text-maroon-500 text-4xl"></i>
+                  </div>
+                    <h3 class="text-xl font-semibold text-maroon-500 mb-2">
+                      Testimonial Coming Soon
+                    </h3>
+                    <p class="text-white text-center max-w-md">
+                      No testimonials available.
+                      Stay tuned for updates!
+                    </p>
+                </div>
+            {% endfor %}
+
+          </div>
+
+          <!-- Navigation controls -->
+          <div class="flex justify-center mt-12 space-x-4">
+            <button @click="prev()" class="w-12 h-12 rounded-full bg-voima-black/80 border border-maroon-500/30 flex items-center text-white justify-center hover:bg-gold hover:text-voima-black transition-all duration-300 shadow-lg transform hover:scale-110 focus:outline-none"  aria-label="Previous testimonial">
+              <i class="fas fa-chevron-left"></i>
+            </button>
+            
+            <!-- Indicators -->
+            <div class="flex items-center space-x-2 mx-4">
+              <template x-for="(dot, i) in total" :key="i">
+                <button @click="goTo(i)" :class="{'bg-white w-8': currentIndex === i, 'bg-gray-600 w-3': currentIndex !== i}"
+                        class="h-3 rounded-full transition-all duration-300 focus:outline-none" :aria-label="`Go to testimonial ${i+1}`"></button>
+              </template>
+            </div>
+            
+            <button @click="next()" class="w-12 h-12 rounded-full bg-voima-black/80 border border-maroon-500/30 flex items-center text-white  justify-center hover:bg-gold hover:text-voima-black transition-all duration-300 shadow-lg transform hover:scale-110 focus:outline-none"  aria-label="Next testimonial">
+              <i class="fas fa-chevron-right"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+
+<section id="news" class="py-16 text-black">
+  <div class="container mx-auto px-4">
+    <!-- Header -->
+           <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Header Section -->
+        <div class="text-center mb-16">
+          <h2 class="text-4xl text-maroon-500 md:text-5xl lg:text-6xl font-bold font-playfair">
+            {{ content.news_title }}
+          </h2>
+          <div class="flex items-center justify-center gap-4 my-4">
+            <div class="h-px w-12 bg-maroon-500/50"></div>
+            <span class="text-sm text-black font-semibold tracking-widest uppercase">
+              NEWS/BLOG
+            </span>
+            <div class="h-px w-12 bg-maroon-500/50"></div>
+          </div>
+          <div class="max-w-3xl mx-auto">
+            <p class="text-lg text-black/90 leading-relaxed">
+                {{ content.news_description }}
+
+            </p>
+          </div>
+        </div>
+      </div>
+
+
+    <!-- News Grid -->
+    <div class="grid grid-cols-1 sm:grid-cols-1 lg:grid-cols-2 gap-8">
+      {% for news in page_obj %}
+      <div class="group relative overflow-hidden rounded-3xl shadow-xl hover:shadow-3xl transition-shadow duration-500">
+        <!-- Image -->
+        <div class="h-[500px] w-full overflow-hidden rounded-t-3xl">
+          {% if news.news_image %}
+          <img src="{{ news.news_image.url }}" 
+               alt="{{ news.news_title }}"
+               class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110">
+          {% else %}
+          <img src="https://images.unsplash.com/photo-1559757148-5c350d0d3c56?ixlib=rb-4.0.3&auto=format&fit=crop&w=1548&q=80" 
+               alt="Default News"
+               class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110">
+          {% endif %}
+        </div>
+
+        <!-- Overlay & Text -->
+        <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+        <div class="absolute bottom-0 left-0 right-0 p-6 flex flex-col gap-2 group-hover:translate-y-0 -translate-y-10 transition-all duration-500">
+          <span class="bg-maroon-500 text-white text-xs font-semibold uppercase px-3 py-1" style="width: fit-content;">{{ news.news_type }}</span>
+          <h3 class="text-white text-lg md:text-xl font-bold">
+            <p class="hover:underline">{{ news.news_title }}</p>
+          </h3>
+          <p class="text-white/90 text-sm md:text-base leading-relaxed line-clamp-3">
+            {{ news.news_description|truncatewords:20 }}
+          </p>
+          <a href="{% url 'news_detail' news.pk %}" class="mt-2 text-maroon-300 hover:text-maroon-100 font-semibold inline-flex items-center text-sm md:text-base transition-colors">
+            Read More <i class="fas fa-arrow-right ml-2"></i>
+          </a>
+        </div>
+      </div>
+      {% empty %}
+    <div
+        class="col-span-full flex flex-col items-center justify-center py-4 px-6"
+      >
+        <div class="bg-maroon-50 rounded-full p-6 mb-4">
+          <i class="fas fa-concierge-bell text-maroon-500 text-4xl"></i>
+        </div>
+        <h3 class="text-xl font-semibold text-maroon-500 mb-2">
+          News Coming Soon
+        </h3>
+        <p class="text-gray-600 text-center max-w-md">
+          No news articles available. To be added soon!
+          Stay tuned for updates!
+        </p>
+      </div>
+      {% endfor %}
+    </div>
+
+  {% if page_obj.has_other_pages %}
+  <nav class="mt-16 flex justify-center">
+    <ul class="inline-flex items-center gap-1 rounded-full bg-white/10 px-3 py-2 backdrop-blur">
+
+      {% if page_obj.has_previous %}
+        <li>
+          <a href="?page={{ page_obj.previous_page_number }}"
+            class="px-4 py-2 rounded-full bg-maroon-500 text-white font-semibold hover:bg-gold hover:text-black transition">
+            Prev
+          </a>
+        </li>
+      {% else %}
+        <li class="px-4 py-2 rounded-full bg-maroon-500 text-white cursor-not-allowed">
+          Prev
+        </li>
+      {% endif %}
+
+      {% for num in page_obj.paginator.page_range %}
+        {% if num == page_obj.number %}
+          <li class="px-4 py-2 rounded-full text-maroon-500 font-bold">
+            {{ num }}
+          </li>
+        {% elif num >= page_obj.number|add:"-2" and num <= page_obj.number|add:"2" %}
+          <li>
+            <a href="?page={{ num }}"
+              class="px-4 py-2 rounded-full bg-white text-maroon-600 hover:bg-maroon-500 hover:text-white transition">
+              {{ num }}
+            </a>
+          </li>
+        {% endif %}
+      {% endfor %}
+
+      {% if page_obj.has_next %}
+        <li>
+          <a href="?page={{ page_obj.next_page_number }}"
+            class="px-4 py-2 rounded-full bg-maroon-500 text-white font-semibold hover:text-white  transition">
+            Next
+          </a>
+        </li>
+      {% else %}
+        <li class="px-4 py-2 rounded-full bg-maroon-500 text-white cursor-not-allowed">
+          Next
+        </li>
+      {% endif %}
+
+    </ul>
+  </nav>
+  {% endif %}
+
+
+
+  </div>
+</section>
+
+{% endblock %}

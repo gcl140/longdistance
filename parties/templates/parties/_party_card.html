@@ -1,0 +1,60 @@
+{# Wrapped in a <div> (not <a>) so the action row can host buttons + forms. #}
+<div class="group relative bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl overflow-hidden transition"
+     x-data="{ copied: '' }">
+  <a href="{% url 'parties:room' party.access_code %}" class="block">
+    <div class="aspect-video bg-gradient-to-br from-netflix-red/30 to-black/40 relative flex items-center justify-center overflow-hidden">
+      {% if party.session.poster_url %}
+      <img src="{{ party.session.poster_url }}" alt="{{ party.session.title }}" class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition">
+      <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
+      {% else %}
+      <i class="fas fa-clapperboard text-4xl text-white/30 group-hover:text-white/50 transition"></i>
+      {% endif %}
+      {% if host %}<span class="absolute top-2 left-2 text-[10px] uppercase tracking-wide bg-netflix-red px-2 py-0.5 rounded font-bold z-10">Host</span>{% endif %}
+      {% if party.is_private %}<span class="absolute top-2 right-2 text-white/70 z-10"><i class="fas fa-lock text-xs"></i></span>{% endif %}
+    </div>
+    <div class="px-4 pt-4 pb-2">
+      <h3 class="font-bold truncate">{{ party.name }}</h3>
+      {% if party.scheduled_for %}
+      <div class="text-xs text-netflix-red mt-1"><i class="fas fa-clock mr-1"></i>{{ party.scheduled_for|date:'M j, g:i A' }}</div>
+      {% endif %}
+      <div class="flex items-center justify-between mt-1 text-sm text-white/50">
+        <span><i class="fas fa-users mr-1"></i>{{ party.members.count }}</span>
+        <span class="font-mono">{{ party.access_code }}</span>
+      </div>
+    </div>
+  </a>
+
+  {# Action row — buttons/forms can't live inside the <a>, so they sit below it. #}
+  <div class="px-4 pb-3 flex items-center gap-3 text-white/40 text-sm">
+    <button type="button" title="Copy code"
+            @click="navigator.clipboard.writeText('{{ party.access_code }}'); copied='code'; setTimeout(()=>copied='',1200)"
+            class="hover:text-white transition">
+      <i class="fas" :class="copied==='code' ? 'fa-check text-netflix-red' : 'fa-hashtag'"></i>
+    </button>
+    <button type="button" title="Copy invite link"
+            @click="navigator.clipboard.writeText(window.location.origin + '{% url 'parties:room' party.access_code %}'); copied='link'; setTimeout(()=>copied='',1200)"
+            class="hover:text-white transition">
+      <i class="fas" :class="copied==='link' ? 'fa-check text-netflix-red' : 'fa-link'"></i>
+    </button>
+    <span x-show="copied" x-cloak class="text-xs text-netflix-red"
+          x-text="copied==='code' ? 'Code copied' : 'Link copied'"></span>
+
+    <span class="ml-auto"></span>
+
+    {% if host %}
+    <form method="POST" action="{% url 'parties:end' party.access_code %}"
+          onsubmit="return confirm('End “{{ party.name|escapejs }}” for everyone?')">{% csrf_token %}
+      <button type="submit" title="End party" class="hover:text-netflix-red transition">
+        <i class="fas fa-trash"></i>
+      </button>
+    </form>
+    {% else %}
+    <form method="POST" action="{% url 'parties:leave' party.access_code %}"
+          onsubmit="return confirm('Leave “{{ party.name|escapejs }}”?')">{% csrf_token %}
+      <button type="submit" title="Leave party" class="hover:text-netflix-red transition">
+        <i class="fas fa-arrow-right-from-bracket"></i>
+      </button>
+    </form>
+    {% endif %}
+  </div>
+</div>

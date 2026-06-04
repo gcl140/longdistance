@@ -1,0 +1,25 @@
+{
+  "name": "longdistance",
+  "version": "1.0.0",
+  "description": "**Watch movies together, from anywhere.** Lisa is a Netflix-styled watch-party app for long-distance friends and couples — synchronized playback, live chat, video calls, and a shared movie wishlist, all in one dark, cinematic interface.",
+  "main": "index.js",
+  "scripts": {
+    "build:css": "tailwindcss -i ./static/css/tailwind-src.css -o ./static/css/tailwind.css --minify",
+    "watch:css": "tailwindcss -i ./static/css/tailwind-src.css -o ./static/css/tailwind.css --watch"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gcl140/longdistance.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/gcl140/longdistance/issues"
+  },
+  "homepage": "https://github.com/gcl140/longdistance#readme",
+  "devDependencies": {
+    "tailwindcss": "^3.4.19"
+  }
+}

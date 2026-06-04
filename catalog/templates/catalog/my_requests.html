@@ -1,0 +1,58 @@
+{% extends 'yuzzaz/full_base.html' %}
+{% block title %}| My Requests{% endblock %}
+{% block content %}
+<section class="pt-24 md:pt-28 px-4 md:px-12 pb-16 min-h-screen max-w-3xl mx-auto">
+
+  <h1 class="text-3xl md:text-4xl font-extrabold mb-2">My Requests</h1>
+  <p class="text-white/60 mb-8">Movies you've asked for. Completed and closed requests are removed automatically after a couple of weeks.</p>
+
+  {% if requests %}
+  <div class="space-y-3">
+    {% for r in requests %}
+    <div class="flex gap-4 bg-white/5 border border-white/10 rounded-lg p-3">
+      <div class="w-14 h-20 rounded overflow-hidden bg-white/10 shrink-0">
+        {% if r.poster_url %}<img src="{{ r.poster_url }}" class="w-full h-full object-cover">
+        {% else %}<div class="w-full h-full flex items-center justify-center text-white/30"><i class="fas fa-film"></i></div>{% endif %}
+      </div>
+      <div class="min-w-0 flex-1">
+        <div class="flex items-start gap-2">
+          <div class="min-w-0 flex-1">
+            <div class="font-semibold truncate">{{ r.title }}{% if r.year %} <span class="text-white/40 font-normal">({{ r.year }})</span>{% endif %}</div>
+            <div class="text-xs text-white/40 mt-0.5">
+              Requested {{ r.created_at|date:'M j, Y' }} · {{ r.vote_count }} vote{{ r.vote_count|pluralize }}
+            </div>
+          </div>
+          <!-- Status badge -->
+          {% if r.status == 'fulfilled' %}
+          <span class="shrink-0 text-xs font-semibold px-2.5 py-1 rounded-full bg-green-500/20 text-green-300"><i class="fas fa-circle-check mr-1"></i>Completed</span>
+          {% elif r.status == 'approved' %}
+          <span class="shrink-0 text-xs font-semibold px-2.5 py-1 rounded-full bg-blue-500/20 text-blue-300"><i class="fas fa-spinner mr-1"></i>Sourcing</span>
+          {% elif r.status == 'rejected' %}
+          <span class="shrink-0 text-xs font-semibold px-2.5 py-1 rounded-full bg-white/10 text-white/40"><i class="fas fa-circle-xmark mr-1"></i>Closed</span>
+          {% else %}
+          <span class="shrink-0 text-xs font-semibold px-2.5 py-1 rounded-full bg-yellow-500/20 text-yellow-300"><i class="fas fa-clock mr-1"></i>Pending</span>
+          {% endif %}
+        </div>
+
+        {% if r.status == 'fulfilled' and r.fulfilled_movie %}
+        <button onclick="openMovie({{ r.fulfilled_movie.id }})"
+                class="mt-2 inline-flex items-center text-xs font-semibold bg-netflix-red hover:bg-netflix-red/90 px-3 py-1.5 rounded">
+          <i class="fas fa-play mr-1.5"></i>It's ready — watch
+        </button>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="text-center py-16 text-white/50">
+    <i class="fas fa-clapperboard text-4xl mb-3 text-white/20"></i>
+    <p>You haven't requested anything yet.</p>
+    <p class="text-sm mt-1">Use the search to find a movie, then hit <span class="text-white/70">Request</span>.</p>
+  </div>
+  {% endif %}
+
+</section>
+
+{% include 'catalog/_movie_modal.html' %}
+{% endblock %}

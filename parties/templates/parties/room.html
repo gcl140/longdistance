@@ -1,0 +1,287 @@
+{% extends 'yuzzaz/full_base.html' %}
+{% load static %}
+{% block title %}| {{ party.name }}{% endblock %}
+{% block content %}
+<div class="pt-16 h-screen flex flex-col" x-data="room()">
+
+  <!-- Room top bar -->
+  <div class="flex items-center justify-between gap-3 px-4 md:px-8 py-3 border-b border-white/10 bg-black/40">
+    <div class="min-w-0">
+      <h1 class="font-bold truncate">{{ party.name }}</h1>
+      <button @click="copyCode()" class="text-xs text-white/50 hover:text-white font-mono">
+        <i class="fas fa-link mr-1"></i><span x-text="copied ? 'Copied link!' : '{{ party.access_code }}'"></span>
+      </button>
+      {% if party.scheduled_for %}
+      <a href="{% url 'schedule:ics_event' party.access_code %}" class="text-xs text-netflix-red hover:underline ml-3" title="Add to calendar">
+        <i class="fas fa-calendar-plus mr-1"></i>{{ party.scheduled_for|date:'M j, g:i A' }}
+      </a>
+      {% endif %}
+    </div>
+    <div class="flex items-center gap-2">
+      <button @click="toggleCamera()" :class="camOn ? 'bg-netflix-red' : 'bg-white/10 hover:bg-white/20'" class="px-3 py-1.5 rounded text-sm transition">
+        <i class="fas" :class="camOn ? 'fa-video' : 'fa-video-slash'"></i>
+        <span x-text="camOn ? 'Camera on' : 'Camera'"></span>
+      </button>
+      {% if invitable %}
+      <div class="relative" x-data="{ open:false }">
+        <button @click="open=!open" class="px-3 py-1.5 rounded bg-white/10 hover:bg-white/20 text-sm"><i class="fas fa-user-plus mr-1"></i>Invite</button>
+        <div x-show="open" @click.outside="open=false" x-cloak class="absolute right-0 mt-2 w-56 bg-black/95 border border-white/10 rounded-lg shadow-xl py-2 z-50">
+          {% for c in invitable %}
+          <form method="POST" action="{% url 'parties:invite' party.access_code %}">{% csrf_token %}
+            <input type="hidden" name="recipient" value="{{ c.friend.id }}">
+            <button class="w-full text-left px-4 py-2 hover:bg-white/10 text-sm">{{ c.nickname|default:c.friend.get_full_name|default:c.friend.email }}</button>
+          </form>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+      {% if is_host %}
+      <form method="POST" action="{% url 'parties:end' party.access_code %}" onsubmit="return confirm('End this party for everyone?')">{% csrf_token %}
+        <button class="px-3 py-1.5 rounded bg-netflix-red/80 hover:bg-netflix-red text-sm"><i class="fas fa-stop mr-1"></i>End</button>
+      </form>
+      {% else %}
+      <form method="POST" action="{% url 'parties:leave' party.access_code %}">{% csrf_token %}
+        <button class="px-3 py-1.5 rounded bg-white/10 hover:bg-white/20 text-sm"><i class="fas fa-arrow-right-from-bracket mr-1"></i>Leave</button>
+      </form>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Body: player + sidebar -->
+  <div class="flex-1 flex flex-col lg:flex-row min-h-0">
+
+    <!-- Player -->
+    <div class="flex-1 bg-black flex flex-col min-h-0 relative">
+      <div class="flex-1 flex items-center justify-center relative p-2 min-h-0">
+        <!-- Player + custom controls -->
+        <div id="player-wrap" x-show="hasVideo" x-cloak class="relative w-full h-full flex items-center justify-center group/p">
+          <video id="player" class="max-h-full max-w-full" playsinline
+                 {% if session.video_url %}src="{{ session.video_url }}"{% endif %}>
+            {% if session.subtitle_url %}<track id="subtrack" kind="subtitles" srclang="en" label="English" src="{{ session.subtitle_url }}" default>{% endif %}
+          </video>
+
+          <!-- Big center play/pause (hover) -->
+          {% if can_control %}
+          <button id="big-play" type="button"
+                  class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 rounded-full bg-black/50 hover:bg-black/70 backdrop-blur flex items-center justify-center text-white text-2xl opacity-0 group-hover/p:opacity-100 transition">
+            <i class="fas fa-play"></i>
+          </button>
+          {% endif %}
+
+          <!-- Shown when audio plays but the browser can't decode the video track -->
+          <div x-show="videoUnsupported" x-cloak class="absolute inset-0 flex items-center justify-center text-center p-6 bg-black/85">
+            <div>
+              <i class="fas fa-triangle-exclamation text-3xl text-netflix-red mb-3"></i>
+              <p class="text-white/80 text-sm max-w-sm">Audio is playing, but your browser can't decode this video's format
+                (often H.265/HEVC). Re-encode the file to <b>H.264 MP4</b>, or try it in Chrome.</p>
+            </div>
+          </div>
+
+          <div id="controls" class="absolute bottom-0 inset-x-0 px-3 pb-2 pt-10 bg-gradient-to-t from-black/85 to-transparent opacity-0 group-hover/p:opacity-100 transition">
+            <!-- Timeline -->
+            <div id="timeline" class="relative h-1.5 bg-white/25 rounded mb-2 cursor-pointer group/bar">
+              <div id="buffered" class="absolute inset-y-0 left-0 bg-white/30 rounded" style="width:0%"></div>
+              <div id="played"   class="absolute inset-y-0 left-0 bg-netflix-red rounded" style="width:0%"></div>
+              <div id="scrubber" class="absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-netflix-red rounded-full -ml-1.5 opacity-0 group-hover/bar:opacity-100 transition" style="left:0%"></div>
+              <!-- Hover thumbnail preview -->
+              <div id="preview" class="absolute bottom-5 -translate-x-1/2 hidden flex-col items-center pointer-events-none">
+                <canvas id="thumb" width="160" height="90" class="rounded border border-white/20 bg-black"></canvas>
+                <span id="thumb-time" class="mt-1 text-[10px] bg-black/80 px-1.5 py-0.5 rounded">0:00</span>
+              </div>
+            </div>
+            <!-- Buttons -->
+            <div class="flex items-center gap-3 text-white text-sm">
+              {% if can_control %}
+              <button id="btn-back" type="button" class="hover:text-white/70" title="Back 10s (←)"><i class="fas fa-rotate-left"></i></button>
+              <button id="btn-play" type="button" class="hover:text-white/70 w-5"><i class="fas fa-play"></i></button>
+              <button id="btn-fwd"  type="button" class="hover:text-white/70" title="Forward 10s (→)"><i class="fas fa-rotate-right"></i></button>
+              {% endif %}
+              <span class="text-xs text-white/80"><span id="time-cur">0:00</span> / <span id="time-dur">0:00</span></span>
+              <div class="ml-auto flex items-center gap-4">
+                <button id="btn-cc"   type="button" class="hidden hover:text-white/70" title="Subtitles"><i class="fas fa-closed-captioning"></i></button>
+                <button id="btn-mute" type="button" class="hover:text-white/70"><i class="fas fa-volume-high"></i></button>
+                <button id="btn-full" type="button" class="hover:text-white/70"><i class="fas fa-expand"></i></button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="no-video" x-show="!hasVideo" class="flex flex-col items-center justify-center text-center px-6 w-full max-w-md">
+          <i class="fas fa-film text-5xl text-white/20 mb-4"></i>
+          <p class="text-white/70 mb-4" x-text="movieTitle || 'No video loaded yet.'"></p>
+          {% if can_control %}
+          <div class="flex flex-col gap-3 w-full">
+            <div class="flex gap-2">
+              <input id="url-input" type="url" placeholder="Paste a video URL (.mp4 / .m3u8)"
+                     class="flex-1 bg-[#333] rounded px-3 py-2 text-sm text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-netflix-red">
+              <button @click="loadUrl()" class="px-4 py-2 rounded bg-netflix-red hover:bg-netflix-red/90 text-sm font-semibold shrink-0">Load</button>
+            </div>
+            <button @click="searchOpen=true" class="text-sm text-white/60 hover:text-white"><i class="fas fa-magnifying-glass mr-1"></i>Choose a movie</button>
+          </div>
+          {% else %}<p class="text-white/40 text-sm">Waiting for the host to start the movie…</p>{% endif %}
+        </div>
+      </div>
+
+      <!-- Sync status bar -->
+      <div class="px-4 py-2 text-xs text-white/50 flex items-center justify-between border-t border-white/10">
+        <span>
+          {% if can_control %}<i class="fas fa-crown text-netflix-red mr-1"></i>You control playback. Everyone follows you.
+          {% else %}<i class="fas fa-link mr-1"></i>Synced to the host.{% endif %}
+        </span>
+        <span x-text="(connected ? '● live' : '○ connecting…') + (syncLabel ? ' · ' + syncLabel : '')"
+              :class="connected ? 'text-green-400' : 'text-white/40'"></span>
+      </div>
+
+      <!-- Panel collapse/expand toggle (desktop) -->
+      <button @click="panelOpen = !panelOpen" title="Toggle panel"
+              class="hidden lg:flex absolute top-1/2 -translate-y-1/2 right-0 z-40 w-7 h-16 bg-white/10 hover:bg-white/25 rounded-l items-center justify-center transition">
+        <i class="fas text-xs" :class="panelOpen ? 'fa-chevron-right' : 'fa-chevron-left'"></i>
+      </button>
+    </div>
+
+    <!-- Sidebar (collapsible) -->
+    <aside x-show="panelOpen" class="w-full lg:w-[360px] border-t lg:border-t-0 lg:border-l border-white/10 flex flex-col bg-netflix-dark min-h-0">
+
+      <!-- Cameras (top of the panel) -->
+      <div class="border-b border-white/10 p-3 shrink-0">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-semibold text-white/60 uppercase tracking-wide">Cameras</span>
+          <button @click="toggleCamera()" :class="camOn ? 'text-netflix-red' : 'text-white/50 hover:text-white'" class="text-xs">
+            <i class="fas" :class="camOn ? 'fa-video' : 'fa-video-slash'"></i> <span x-text="camOn ? 'On' : 'Off'"></span>
+          </button>
+        </div>
+        <div id="cam-strip" class="grid grid-cols-2 gap-2"></div>
+        <p id="cam-empty" class="text-xs text-white/30 text-center py-4">No one's on camera yet.</p>
+      </div>
+
+      <!-- Tabs -->
+      <div class="flex border-b border-white/10 text-sm shrink-0">
+        <button @click="tab='chat'" :class="tab==='chat' ? 'text-white border-b-2 border-netflix-red' : 'text-white/50'" class="flex-1 py-3 font-semibold"><i class="fas fa-comment mr-1"></i>Chat</button>
+        <button @click="tab='people'" :class="tab==='people' ? 'text-white border-b-2 border-netflix-red' : 'text-white/50'" class="flex-1 py-3 font-semibold"><i class="fas fa-users mr-1"></i>People</button>
+      </div>
+
+      <div x-show="tab==='chat'" class="flex-1 flex flex-col min-h-0">
+        <div id="messages" class="flex-1 overflow-y-auto p-4 space-y-3"></div>
+        <form id="chat-form" class="p-3 border-t border-white/10 flex gap-2">
+          <input id="chat-input" autocomplete="off" placeholder="Say something…"
+                 class="flex-1 bg-[#333] rounded-full px-4 py-2 text-sm text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-netflix-red">
+          <button class="w-10 h-10 rounded-full bg-netflix-red hover:bg-netflix-red/90 flex items-center justify-center"><i class="fas fa-paper-plane text-sm"></i></button>
+        </form>
+      </div>
+
+      <div x-show="tab==='people'" x-cloak class="flex-1 overflow-y-auto p-4 space-y-2">
+        {% for m in members %}
+        <div class="group flex items-center gap-3">
+          <span class="relative w-8 h-8 rounded-full bg-netflix-red/80 flex items-center justify-center text-sm font-bold shrink-0">
+            {{ m.user.get_full_name|default:m.user.email|first|upper }}
+            {% if m.user_id in my_friend_ids %}
+            <span data-presence-user="{{ m.user_id }}" title="Offline"
+                  class="presence-dot absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-netflix-dark bg-white/30"></span>
+            {% endif %}
+          </span>
+          <span class="text-sm truncate">{{ m.user.get_full_name|default:m.user.email }}</span>
+
+          <div class="ml-auto flex items-center gap-2 shrink-0">
+            {% if m.user_id != user.id %}
+              {% if m.user_id in my_friend_ids %}
+                <i class="fas fa-user-check text-white/30 text-xs" title="Friend"></i>
+              {% elif m.user_id in pending_ids %}
+                <span class="text-[10px] text-white/30">requested</span>
+              {% else %}
+                <form method="POST" action="{% url 'friends:request' %}">{% csrf_token %}
+                  <input type="hidden" name="user_id" value="{{ m.user_id }}">
+                  <input type="hidden" name="next" value="{% url 'parties:room' party.access_code %}">
+                  <button title="Add friend"
+                          class="text-white/40 hover:text-netflix-red text-xs opacity-0 group-hover:opacity-100 transition">
+                    <i class="fas fa-user-plus"></i>
+                  </button>
+                </form>
+              {% endif %}
+            {% endif %}
+            {% if m.user_id == party.host_id %}<i class="fas fa-crown text-netflix-red text-xs"></i>
+            {% elif m.is_moderator %}<i class="fas fa-shield text-white/40 text-xs"></i>{% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </aside>
+  </div>
+
+  <!-- Movie search modal (TMDb + Library) -->
+  {% if can_control %}
+  <div x-show="searchOpen" x-cloak class="fixed inset-0 z-[60] bg-black/80 flex items-start justify-center p-4 pt-24" @click.self="searchOpen=false">
+    <div class="w-full max-w-2xl bg-netflix-dark border border-white/10 rounded-xl p-5">
+      <div class="flex items-center gap-4 mb-4 text-sm">
+        <button @click="mode='library'" :class="mode==='library' ? 'text-white border-b-2 border-netflix-red pb-1' : 'text-white/50'">My Library</button>
+        <button @click="mode='tmdb'" :class="mode==='tmdb' ? 'text-white border-b-2 border-netflix-red pb-1' : 'text-white/50'">TMDb (title only)</button>
+        <button @click="searchOpen=false" class="ml-auto text-white/60 hover:text-white"><i class="fas fa-times"></i></button>
+      </div>
+
+      <div x-show="mode==='library'">
+        <p x-show="!libraryResults.length" class="text-white/50 text-sm mb-3">No playable movies in the library yet. <a href="{% url 'catalog:library' %}" class="text-netflix-red hover:underline">Open library</a></p>
+        <div class="grid grid-cols-3 sm:grid-cols-4 gap-3 max-h-[60vh] overflow-y-auto">
+          <template x-for="r in libraryResults" :key="r.id">
+            <button @click="pickLibrary(r)" class="text-left group">
+              <div class="aspect-[2/3] rounded overflow-hidden bg-white/5">
+                <template x-if="r.poster"><img :src="r.poster" class="w-full h-full object-cover group-hover:scale-105 transition"></template>
+                <template x-if="!r.poster"><div class="w-full h-full flex items-center justify-center text-white/30"><i class="fas fa-film"></i></div></template>
+              </div>
+              <div class="text-xs mt-1 truncate" x-text="r.title"></div>
+              <div class="text-[10px] text-white/40" x-text="r.year"></div>
+            </button>
+          </template>
+        </div>
+      </div>
+
+      <div x-show="mode==='tmdb'" x-cloak>
+        <div class="flex gap-2 mb-3">
+          <input x-model="q" @keydown.enter="doSearch()" placeholder="Search a movie or show…"
+                 class="flex-1 bg-[#333] rounded px-4 py-2.5 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-netflix-red">
+          <button @click="doSearch()" class="px-4 py-2.5 rounded bg-netflix-red hover:bg-netflix-red/90 font-semibold">Search</button>
+        </div>
+        <p x-show="searchMsg" x-text="searchMsg" class="text-white/50 text-sm mb-3"></p>
+        <div class="grid grid-cols-3 sm:grid-cols-4 gap-3 max-h-[55vh] overflow-y-auto">
+          <template x-for="r in results" :key="r.id">
+            <div class="text-left group flex flex-col">
+              <div class="aspect-[2/3] rounded overflow-hidden bg-white/5 relative">
+                <template x-if="r.poster"><img :src="r.poster" class="w-full h-full object-cover group-hover:scale-105 transition"></template>
+                <template x-if="!r.poster"><div class="w-full h-full flex items-center justify-center text-white/30"><i class="fas fa-film"></i></div></template>
+                <span x-show="r.rating" class="absolute top-1 left-1 text-[10px] bg-black/70 px-1.5 py-0.5 rounded"><i class="fas fa-star text-yellow-400 mr-0.5"></i><span x-text="r.rating ? r.rating.toFixed(1) : ''"></span></span>
+                <span x-show="r.in_library && r.playable" class="absolute top-1 right-1 text-[10px] bg-netflix-red px-1.5 py-0.5 rounded font-semibold">In library</span>
+              </div>
+              <div class="text-xs mt-1 truncate" x-text="r.title"></div>
+              <div class="text-[10px] text-white/40" x-text="r.year"></div>
+              <template x-if="r.in_library && r.playable">
+                <button @click="playFromTmdb(r)" class="mt-1 text-xs bg-netflix-red hover:bg-netflix-red/90 rounded py-1 font-semibold"><i class="fas fa-play mr-1"></i>Watch</button>
+              </template>
+              <template x-if="!r.in_library && !r.voted">
+                <button @click="requestMovie(r)" class="mt-1 text-xs bg-white/10 hover:bg-white/20 rounded py-1"><i class="fas fa-bell mr-1"></i>Request</button>
+              </template>
+              <template x-if="!r.in_library && r.voted">
+                <div class="mt-1 text-xs bg-white/5 text-white/60 rounded py-1 text-center"><i class="fas fa-check mr-1"></i>Requested · <span x-text="r.vote_count"></span></div>
+              </template>
+            </div>
+          </template>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<script>
+  window.LISA_ROOM = {
+    code: "{{ party.access_code }}",
+    canControl: {{ can_control|yesno:"true,false" }},
+    searchUrl: "{% url 'catalog:search' %}",
+    libraryUrl: "{% url 'catalog:library_json' %}",
+    requestUrl: "{% url 'catalog:request' %}",
+    msgsUrl: "{% url 'parties:messages' party.access_code %}",
+    videoUrl: "{{ session.video_url|escapejs }}",
+    title: "{{ session.title|escapejs }}",
+    resumePos: {{ session.current_position|default_if_none:0 }},
+    hasVideo: {% if session.video_url %}true{% else %}false{% endif %},
+  };
+</script>
+<script src="{% static 'js/room.js' %}" defer></script>
+{% endblock %}

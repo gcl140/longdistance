@@ -1,0 +1,210 @@
+{% extends "yuzzaz/full_base.html" %}
+{% load static %}
+{% block title %} Company Profile{% endblock %}
+{% block content %}
+
+<!-- Hero Section -->
+<section class="relative bg-gradient-to-b from-black to-gray-900 h-96 flex items-center">
+  <div class="absolute inset-0 bg-blacks bg-cover bg-center opacity-30"></div>
+  <div class="container mx-auto px-4 z-10 text-center">
+    <h1 class="text-5xl font-bold text-white mb-4 uppercase">Lisa Heights</h1>
+    <p class="text-xl text-red-400 font-saint">Go beyond the Norm!</p>
+  </div>
+</section>
+
+<!-- About Us Section -->
+<section class="py-16 bg-gray-900">
+  <div class="container mx-auto px-4 lg:px-8">
+    <div class="flex flex-col lg:flex-row items-center gap-12">
+      <div class="lg:w-1/2">
+        <img src="{% static 'images/blacks success.jpg' %}" alt="Diverse Students" class="rounded-xl shadow-2xl border-2 border-maroon/50">
+      </div>
+      <div class="lg:w-1/2">
+        <h2 class="text-4xl font-bold text-white mb-6 flex items-center">
+          <i class="fas fa-university mr-3 text-maroon"></i>
+          WHO ARE WE?
+        </h2>
+        <div class="space-y-4 text-gray-300">
+          <p>Lisa is a university agency that deals with giving students all over Africa an opportunity to study overseas, mainly Canada. We offer free consultation services to all students who apply in Canada via North and Beyond.</p>
+          <p>We ensure that our clients have an excellent experience abroad as international students by assisting them with their applications such as visa, accommodation, and all necessary processes. We help cover costs of subsistence such as food and accommodation as well as transportation.</p>
+          <p>We also assist students wishing to study in countries like Italy, France and Canada.</p>
+          <p class="text-maroon-300 font-medium">Applying to universities shouldn't be stressful and with Lisa Heights, it isn't. We're with you in the entire process!</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Mission Section -->
+
+
+<!-- Mission Section -->
+<section class="relative py-28 bg-black text-white">
+    <!-- Background Image -->
+    <div class="absolute inset-0 z-0">
+        <img src="{% static 'images/black grad.jpg' %}"
+            alt="Global education" class="w-full h-full object-cover object-center brightness-50">
+    </div>
+
+    <!-- Overlay Content -->
+    <div class="relative z-10 container mx-auto px-4 lg:px-8">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            <!-- Text Content -->
+            <div class="bg-black/50 backdrop-blur-lg p-10 rounded-2xl border border-white/10 shadow-xl">
+                <h2
+                    class="text-4xl md:text-5xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-white to-maroon uppercase ">
+          <i class="fas fa-bullseye text-maroon mr-3"></i>
+
+                    Our Mission
+                </h2>
+                <p class="text-gray-300 text-lg leading-relaxed mb-8">
+                    Our mission is to empower students to become global citizens by providing them with
+                    life-changing educational and cultural experiences through studying abroad.
+                    We believe in breaking barriers and creating opportunities for academic excellence across
+                    borders.
+                </p>
+                <div class="flex items-center space-x-4">
+                    <div class="w-16 h-1 bg-maroon"></div>
+                    <span class="text-red-400 font-saint font-bold">Global Education Experts</span>
+                </div>
+            </div>
+
+            <!-- Stats Tag (Right Bottom Corner) -->
+            <div class="flex justify-center lg:justify-end">
+                <div class="relative group max-w-lg w-full">
+                    <div
+                        class="rounded-2xl overflow-hidden shadow-2xl transition transform group-hover:scale-105 duration-700">
+                        <img src="{% static 'images/black grad.jpg' %}"
+                            alt="Global education" class="w-full h-auto object-cover">
+                    </div>
+                    <div
+                        class="absolute bottom-4 left-4 bg-maroon text-white px-4 py-2 rounded-lg shadow-lg transform rotate-0 group-hover:-rotate-3 transition duration-500">
+                        <p class="font-saint font-bold">
+                            <i class="fas fa-calendar-alt mr-2"></i>
+                            Since 2013
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Partners Section -->
+<section class="py-16 bg-gray-900">
+  <div class="container mx-auto px-4 lg:px-8">
+    <h2 class="text-4xl font-bold text-white mb-12 text-center">
+      <i class="fas fa-handshake text-maroon mr-3"></i>
+      OUR PARTNERS
+    </h2>
+    <p class="text-gray-400 text-center mb-12 max-w-2xl mx-auto">Below is a fraction of the institutions we are working with which are globally accredited with the best degrees.</p>
+
+  <div class="container mx-auto px-4 lg:px-8 relative z-10">
+
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+      {% for uni in universities %}
+      <div class="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6 hover:shadow-xl transition duration-500 relative">
+        <div class="flex items-center mb-4">
+          <img src="https://logo.clearbit.com/{{ uni.website|cut:'https://'|cut:'www.' }}" alt="{{ uni.name }}"
+               class="w-12 h-12 mr-4 rounded-xl" onerror="this.src='{% static 'images/uni.jpeg' %}'">
+          <div>
+            <h3 class="text-xl font-bold text-white">{{ uni.name }}</h3>
+            <p class="text-gray-400 text-sm">{{ uni.location }}</p>
+          </div>
+        </div>
+
+        <p class="text-gray-300 mb-4 text-sm">{{ uni.description|truncatechars:40 }}</p>
+        <div class="flex justify-between text-sm">
+          <span class="text-red-400 font-semibold">Acceptance: {{ uni.acceptance_rate }}</span>
+          <span class="text-gray-400">Deadline: {{ uni.deadline|date:"M d" }}</span>
+        </div>
+        <a href="{{ uni.website }}" target="_blank"
+           class="block mt-4 text-red-600 hover:text-white transition-colors text-sm font-semibold text-right">
+          Visit Website <i class="fas fa-external-link-alt ml-1"></i>
+        </a>
+      </div>
+      {% empty %}
+      <div class="col-span-full flex flex-col items-center justify-center text-center py-12">
+        <div class="flex items-center justify-center w-24 h-24 bg-maroon rounded-full mb-4 shadow-lg">
+          <i class="fas fa-university text-white text-4xl"></i>
+        </div>
+        <p class="text-gray-300 text-lg">No partner universities added yet.</p>
+      </div>
+      {% endfor %}
+    </div>
+
+    {% if universities|length >= 3 %}
+    <div class="text-center mt-8">
+      <a href="{% url 'all_universities' %}" class="inline-block bg-maroon text-white px-6 py-3 rounded-full font-semibold hover:bg-red-900 transition">
+        See More Universities
+      </a>
+    </div>
+    {% elif user.is_authenticated and user.is_staff %}
+    <div class="text-center mt-8">
+      <a href="{% url 'all_universities' %}" class="inline-block bg-maroon text-white px-6 py-3 rounded-full font-semibold hover:bg-red-900 transition">
+        Manage Universities
+      </a>
+    </div>
+    {% endif %}
+  </div>
+</section>
+
+<!-- <hr class="border-t border-gray-900/10"> -->
+
+<section class="py-12 bg-gray-900">
+  <div class="container mx-auto px-4 lg:px-8">
+    <h2 class="text-4xl font-bold text-white mb-12 text-center">
+      <i class="fas fa-images text-maroon mr-3"></i>
+      GALLERY
+    </h2>
+    <p class="text-gray-400 text-center mb-12 max-w-2xl mx-auto">A glimpse of what we do here!</p>
+
+        <div class="container mx-auto px-4 lg:px-8 relative z-10">
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+                {% for item in gallery_items %}
+                <div class="group relative overflow-hidden rounded-2xl cursor-pointer">
+                    <img src="{{ item.image.url }}" alt="{{ item.occasion_title|default:'Gallery image' }}"
+                        class="w-full h-64 object-cover transform group-hover:scale-110 transition duration-500">
+                    <div
+                        class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition duration-500 flex items-end p-4">
+                        <div>
+                            {% if item.occasion_title %}
+                            <p class="text-white font-semibold">{{ item.occasion_title }}</p>
+                            {% endif %}
+                            {% if item.caption %}
+                            <p class="text-gray-300 text-sm">{{ item.caption }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="col-span-3 text-center text-gray-400">
+                    <i class="fas fa-images text-4xl mb-2"></i>
+                    <p>No gallery items uploaded yet.</p>
+                </div>
+                {% endfor %}
+            </div>
+
+            {% if gallery_items|length >= 3 %}
+            <div class="text-center mt-8">
+                <a href="{% url 'gallery' %}"
+                    class="inline-block bg-maroon text-white px-6 py-3 rounded-full font-semibold hover:bg-red-900 transition">
+                    See More Gallery Items
+                </a>
+            </div>
+            {% elif user.is_authenticated and user.is_staff %}
+            <div class="text-center mt-8">
+                <a href="{% url 'gallery' %}"
+                    class="inline-block bg-maroon text-white px-6 py-3 rounded-full font-semibold hover:bg-red-900 transition">
+                    Manage Gallery
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </section>
+
+
+
+{% endblock %}

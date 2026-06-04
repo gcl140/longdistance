@@ -1,0 +1,7 @@
+.text-glow { text-shadow: 0 0 10px rgba(188, 42, 42, 0.7); }
+.animation-delay-2000 { animation-delay: 2s; }
+
+@media (max-width: 768px) {
+  #testimonials .glass { padding: 1.5rem; }
+  #testimonials .relative.h-\[500px\] { height: 700px; }
+}

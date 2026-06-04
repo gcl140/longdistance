@@ -1,0 +1,89 @@
+{% extends 'yuzzaz/full_base.html' %}
+{% load static %}
+{% block title %}| Add a Movie{% endblock %}
+{% block content %}
+<section class="pt-24 md:pt-28 px-4 pb-16 min-h-screen flex justify-center" x-data="uploadForm()">
+  <div class="w-full max-w-xl">
+    <a href="{% url 'catalog:library' %}" class="text-white/50 hover:text-white text-sm"><i class="fas fa-arrow-left mr-2"></i>Back to library</a>
+    <h1 class="text-3xl font-extrabold mt-3 mb-2">Add a Movie</h1>
+    <p class="text-white/60 mb-6">Upload a file or point to a stream URL. Optionally pull artwork from TMDb.</p>
+
+    <!-- TMDb autofill -->
+    <div class="mb-6 bg-white/5 border border-white/10 rounded-lg p-4">
+      <button type="button" @click="tmdbOpen=!tmdbOpen" class="text-sm font-semibold text-white/80"><i class="fas fa-magnifying-glass mr-2"></i>Find on TMDb (autofills title/poster)</button>
+      <div x-show="tmdbOpen" x-cloak class="mt-3">
+        <div class="flex gap-2">
+          <input x-model="q" @keydown.enter.prevent="search()" placeholder="Search title…" class="flex-1 bg-[#333] rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-netflix-red">
+          <button type="button" @click="search()" class="px-3 py-2 rounded bg-netflix-red text-sm font-semibold">Search</button>
+        </div>
+        <p x-text="msg" class="text-xs text-white/40 mt-2"></p>
+        <div class="grid grid-cols-4 gap-2 mt-3 max-h-60 overflow-y-auto">
+          <template x-for="r in results" :key="r.id">
+            <button type="button" @click="pick(r)" class="text-left">
+              <div class="aspect-[2/3] rounded overflow-hidden bg-white/5">
+                <template x-if="r.poster"><img :src="r.poster" class="w-full h-full object-cover"></template>
+              </div>
+              <div class="text-[10px] truncate mt-1" x-text="r.title"></div>
+            </button>
+          </template>
+        </div>
+      </div>
+    </div>
+
+    <form method="POST" enctype="multipart/form-data" class="space-y-5 bg-white/5 border border-white/10 rounded-xl p-6">
+      {% csrf_token %}
+      {% if form.non_field_errors %}<div class="text-red-400 text-sm">{{ form.non_field_errors }}</div>{% endif %}
+
+      <div>
+        <label class="block text-sm text-white/70 mb-1">Title</label>
+        <input name="title" x-ref="title" value="{{ form.title.value|default:'' }}" required class="w-full bg-[#333] rounded px-4 py-3 focus:outline-none focus:ring-2 focus:ring-netflix-red">
+        {{ form.title.errors }}
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-sm text-white/70 mb-1">Year</label>
+          <input name="year" x-ref="year" value="{{ form.year.value|default:'' }}" class="w-full bg-[#333] rounded px-4 py-3 focus:outline-none focus:ring-2 focus:ring-netflix-red">
+        </div>
+        <div>
+          <label class="block text-sm text-white/70 mb-1">TMDb ID <span class="text-white/30">(optional)</span></label>
+          <input name="tmdb_id" x-ref="tmdb" value="{{ form.tmdb_id.value|default:'' }}" class="w-full bg-[#333] rounded px-4 py-3 focus:outline-none focus:ring-2 focus:ring-netflix-red">
+        </div>
+      </div>
+      <div>
+        <label class="block text-sm text-white/70 mb-1">Description</label>
+        <textarea name="description" x-ref="description" rows="3" class="w-full bg-[#333] rounded px-4 py-3 focus:outline-none focus:ring-2 focus:ring-netflix-red">{{ form.description.value|default:'' }}</textarea>
+      </div>
+
+      <div class="border-t border-white/10 pt-4">
+        <p class="text-sm text-white/70 mb-2">Source — upload a file <span class="text-white/30">or</span> paste a stream URL</p>
+        <label class="block text-xs text-white/50 mb-1">Video file</label>
+        <input name="video_file" type="file" accept="video/*" class="w-full text-sm text-white/70 file:mr-3 file:py-2 file:px-4 file:rounded file:border-0 file:bg-netflix-red file:text-white file:font-semibold mb-3">
+        <label class="block text-xs text-white/50 mb-1">…or video URL (.mp4 / .m3u8)</label>
+        <input name="video_url" type="url" value="{{ form.video_url.value|default:'' }}" placeholder="https://media.myserver.com/movie.mp4" class="w-full bg-[#333] rounded px-4 py-3 focus:outline-none focus:ring-2 focus:ring-netflix-red">
+      </div>
+
+      <div class="border-t border-white/10 pt-4">
+        <p class="text-sm text-white/70 mb-2">Subtitles <span class="text-white/30">(optional, .vtt or .srt — .srt is auto-converted)</span></p>
+        <input name="subtitle_file" type="file" accept=".vtt,.srt,text/vtt,application/x-subrip" class="w-full text-sm text-white/70 file:mr-3 file:py-2 file:px-4 file:rounded file:border-0 file:bg-white/10 file:text-white mb-3">
+        <label class="block text-xs text-white/50 mb-1">…or subtitle URL (.vtt)</label>
+        <input name="subtitle_url" type="url" value="{{ form.subtitle_url.value|default:'' }}" placeholder="https://media.myserver.com/movie.en.vtt" class="w-full bg-[#333] rounded px-4 py-3 focus:outline-none focus:ring-2 focus:ring-netflix-red">
+      </div>
+
+      <div class="border-t border-white/10 pt-4">
+        <label class="block text-xs text-white/50 mb-1">Poster image</label>
+        <input name="poster" type="file" accept="image/*" class="w-full text-sm text-white/70 file:mr-3 file:py-2 file:px-4 file:rounded file:border-0 file:bg-white/10 file:text-white mb-3">
+        <label class="block text-xs text-white/50 mb-1">…or poster URL (TMDb autofills this)</label>
+        <input name="poster_url" x-ref="poster" type="url" value="{{ form.poster_url.value|default:'' }}" class="w-full bg-[#333] rounded px-4 py-3 focus:outline-none focus:ring-2 focus:ring-netflix-red">
+      </div>
+
+      <button type="submit" class="w-full bg-netflix-red hover:bg-netflix-red/90 font-semibold py-3 rounded transition"><i class="fas fa-plus mr-2"></i>Add to library</button>
+    </form>
+  </div>
+
+</section>
+
+<script>
+  window.LISA_UPLOAD = { searchUrl: "{% url 'catalog:search' %}" };
+</script>
+<script src="{% static 'js/upload.js' %}" defer></script>
+{% endblock %}

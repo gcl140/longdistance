@@ -1,0 +1,148 @@
+{% extends "yuzzaz/full_base.html" %}
+{% load static %}
+{% block title %}| Profile{% endblock %}
+{% block extra_head %}<script src="{% static 'js/profile.js' %}" defer></script>{% endblock %}
+
+{% block content %}
+<section class="pt-24 md:pt-28 px-4 md:px-12 pb-16 min-h-screen max-w-4xl mx-auto" x-data="{ editing: false }">
+
+  <div class="flex flex-wrap items-end justify-between gap-4 mb-8">
+    <div>
+      <h1 class="text-3xl md:text-4xl font-extrabold">Profile</h1>
+      <p class="text-white/60 mt-1">Welcome back, {{ user.first_name|default:user.nickname }}.</p>
+    </div>
+    <button @click="editing = !editing"
+            class="px-5 py-2.5 rounded font-semibold transition"
+            :class="editing ? 'bg-white/10 hover:bg-white/20' : 'bg-netflix-red hover:bg-netflix-red/90'">
+      <i class="fas" :class="editing ? 'fa-xmark' : 'fa-pen'"></i>
+      <span x-text="editing ? 'Cancel' : 'Edit profile'" class="ml-1"></span>
+    </button>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+    <!-- Read-only card -->
+    <div class="md:col-span-1 bg-white/5 border border-white/10 rounded-xl overflow-hidden" x-show="!editing">
+      <div class="aspect-square bg-netflix-dark relative">
+        {% if user.profile_picture %}
+        <img src="{{ user.profile_picture.url }}" alt="" class="w-full h-full object-cover">
+        {% else %}
+        <div class="w-full h-full flex items-center justify-center bg-netflix-red text-white text-6xl font-extrabold">
+          {{ user.first_name|first|upper|default:user.email|first|upper }}
+        </div>
+        {% endif %}
+      </div>
+      <div class="p-5 space-y-3 text-sm">
+        <div>
+          <p class="text-white/40 text-xs uppercase tracking-wide">Name</p>
+          <p class="font-medium">{{ user.first_name }} {{ user.last_name }}</p>
+        </div>
+        <div>
+          <p class="text-white/40 text-xs uppercase tracking-wide">Email</p>
+          <p class="font-medium flex items-center gap-2">
+            <span class="truncate">{{ user.email }}</span>
+            {% if user.is_active %}<i class="fas fa-circle-check text-green-400" title="Verified"></i>{% endif %}
+          </p>
+        </div>
+        <div>
+          <p class="text-white/40 text-xs uppercase tracking-wide">Telephone</p>
+          <p class="font-medium">{{ user.telephone|default:'—' }}</p>
+        </div>
+        {% if request_quota and not request_quota.unlimited %}
+        <div class="pt-3 border-t border-white/10">
+          <div class="flex items-center justify-between text-xs text-white/60 mb-1">
+            <span><i class="fas fa-server mr-1"></i>Server storage</span>
+            <span class="font-mono {% if request_quota.blocked %}text-netflix-red{% endif %}">{{ request_quota.used_label }} / {{ request_quota.limit_label }}</span>
+          </div>
+          <div class="h-1.5 bg-white/10 rounded overflow-hidden">
+            <div class="h-full {% if request_quota.blocked %}bg-netflix-red{% else %}bg-netflix-red/80{% endif %}" style="width: {{ request_quota.percent }}%"></div>
+          </div>
+        </div>
+        {% elif request_quota.unlimited %}
+        <div class="pt-3 border-t border-white/10 text-xs text-white/60">
+          <i class="fas fa-infinity mr-1"></i>Admin — no quota
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Editable form -->
+    <div class="md:col-span-2 bg-white/5 border border-white/10 rounded-xl p-6" x-show="editing" x-cloak>
+      <h2 class="text-lg font-bold mb-4">Update your details</h2>
+      <form method="POST" enctype="multipart/form-data" action="{% url 'profile' %}" class="space-y-4">
+        {% csrf_token %}
+
+        <div>
+          <label class="block text-sm text-white/70 mb-1">Profile picture</label>
+          <div class="flex items-center gap-4">
+            <div class="w-16 h-16 rounded-full overflow-hidden bg-netflix-dark flex items-center justify-center text-2xl font-bold">
+              {% if user.profile_picture %}<img id="pic-preview" src="{{ user.profile_picture.url }}" class="w-full h-full object-cover">
+              {% else %}<span id="pic-preview-letter">{{ user.first_name|first|upper|default:user.email|first|upper }}</span>{% endif %}
+            </div>
+            <input type="file" name="profile_picture" accept="image/*" id="id_profile_picture"
+                   class="text-sm text-white/70 file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0 file:bg-white/10 file:text-white">
+          </div>
+          {% if form.profile_picture.errors %}<p class="text-red-400 text-sm mt-1">{{ form.profile_picture.errors.0 }}</p>{% endif %}
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm text-white/70 mb-1">First name</label>
+            <input type="text" name="first_name" value="{{ form.first_name.value|default:'' }}"
+                   class="w-full bg-[#333] rounded px-4 py-3 focus:outline-none focus:ring-2 focus:ring-netflix-red">
+            {% if form.first_name.errors %}<p class="text-red-400 text-sm mt-1">{{ form.first_name.errors.0 }}</p>{% endif %}
+          </div>
+          <div>
+            <label class="block text-sm text-white/70 mb-1">Last name</label>
+            <input type="text" name="last_name" value="{{ form.last_name.value|default:'' }}"
+                   class="w-full bg-[#333] rounded px-4 py-3 focus:outline-none focus:ring-2 focus:ring-netflix-red">
+            {% if form.last_name.errors %}<p class="text-red-400 text-sm mt-1">{{ form.last_name.errors.0 }}</p>{% endif %}
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-sm text-white/70 mb-1">Email <span class="text-white/30 text-xs">(verified — can't be changed)</span></label>
+          <input type="email" value="{{ user.email }}" readonly disabled
+                 class="w-full bg-black/40 rounded px-4 py-3 text-white/60 cursor-not-allowed">
+        </div>
+
+        <div>
+          <label class="block text-sm text-white/70 mb-1">Telephone</label>
+          <input type="tel" name="telephone" value="{{ form.telephone.value|default:'' }}" placeholder="+255123456789"
+                 class="w-full bg-[#333] rounded px-4 py-3 focus:outline-none focus:ring-2 focus:ring-netflix-red">
+          {% if form.telephone.errors %}<p class="text-red-400 text-sm mt-1">{{ form.telephone.errors.0 }}</p>{% endif %}
+        </div>
+
+        <div class="flex gap-3 pt-2">
+          <button type="submit" class="px-6 py-2.5 rounded bg-netflix-red hover:bg-netflix-red/90 font-semibold transition">Save changes</button>
+          <button type="button" @click="editing = false" class="px-6 py-2.5 rounded bg-white/10 hover:bg-white/20 font-semibold transition">Cancel</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Quick actions (shown alongside the read-only card) -->
+    <div class="md:col-span-2 space-y-3" x-show="!editing">
+      <a href="{% url 'catalog:my_requests' %}" class="flex items-center justify-between bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg px-5 py-4 transition">
+        <span><i class="fas fa-bell text-netflix-red mr-2"></i>My movie requests</span>
+        <i class="fas fa-chevron-right text-white/40"></i>
+      </a>
+      <a href="{% url 'parties:my_parties' %}" class="flex items-center justify-between bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg px-5 py-4 transition">
+        <span><i class="fas fa-users text-netflix-red mr-2"></i>My watch parties</span>
+        <i class="fas fa-chevron-right text-white/40"></i>
+      </a>
+      <a href="{% url 'friends:list' %}" class="flex items-center justify-between bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg px-5 py-4 transition">
+        <span><i class="fas fa-user-group text-netflix-red mr-2"></i>Friends</span>
+        <i class="fas fa-chevron-right text-white/40"></i>
+      </a>
+      <form method="POST" action="{% url 'logout' %}">
+        {% csrf_token %}
+        <button class="w-full text-left bg-white/5 hover:bg-netflix-red/20 border border-white/10 rounded-lg px-5 py-4 transition">
+          <i class="fas fa-arrow-right-from-bracket text-white/60 mr-2"></i>Sign out
+        </button>
+      </form>
+    </div>
+  </div>
+</section>
+
+{# Picture-preview script is loaded via the extra_head block (static/js/profile.js). #}
+{% endblock %}

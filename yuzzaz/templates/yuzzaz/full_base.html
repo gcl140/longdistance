@@ -1,0 +1,291 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Lisa {% block title %}{% endblock %}</title>
+
+  <!-- Fonts & Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="shortcut icon" href="{% static 'images/fav.png' %}" type="image/x-icon">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/home.css' %}">
+  <!-- Alpine.js v3 — loaded at end of <body> so component globals (navSearch, etc.) are defined first. -->
+  <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css" />
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+
+  {% block extra_head %}{% endblock %}
+  {% comment %}
+  Tailwind — compiled locally with `npm run build:css`. The theme, fonts,
+  and custom .nf-* classes are in static/css/tailwind-src.css + tailwind.config.js.
+  {% endcomment %}
+  <link rel="stylesheet" href="{% static 'css/tailwind.css' %}">
+</head>
+<body class="bg-netflix-dark text-white font-sen min-h-screen" x-data="{ scrolled:false, mobileOpen:false }" @scroll.window="scrolled = window.scrollY > 40">
+
+  <!-- NAV -->
+  <header class="fixed inset-x-0 top-0 z-50 transition-colors duration-300"
+          :class="scrolled ? 'bg-netflix-black' : 'bg-gradient-to-b from-black/80 to-transparent'">
+    <div class="px-4 md:px-12">
+      <nav class="flex items-center h-16 md:h-[68px] gap-6">
+        <!-- Logo -->
+        <a href="{% url 'home' %}" class="flex items-center shrink-0">
+          <span class="text-netflix-red font-extrabold tracking-tight text-2xl md:text-3xl uppercase"
+                style="font-family: 'Inter', sans-serif; letter-spacing:-.04em;">LISA</span>
+        </a>
+
+        <!-- Desktop links -->
+        <ul class="hidden md:flex items-center gap-5 text-sm text-white/90">
+          <li><a href="{% url 'home' %}" class="font-semibold hover:text-white/70 transition">Home</a></li>
+          {% if user.is_authenticated %}
+          <li><a href="{% url 'catalog:library' %}" class="hover:text-white/70 transition">Movies</a></li>
+          <li><a href="{% url 'parties:my_parties' %}" class="hover:text-white/70 transition">My Parties</a></li>
+          <li><a href="{% url 'schedule:calendar' %}" class="hover:text-white/70 transition">Calendar</a></li>
+          <li><a href="{% url 'friends:list' %}" class="hover:text-white/70 transition">Friends</a></li>
+          <li><a href="{% url 'parties:join' %}" class="hover:text-white/70 transition">Join</a></li>
+          {% endif %}
+        </ul>
+
+        <!-- Right cluster -->
+        <div class="ml-auto flex items-center gap-4 md:gap-5 text-white">
+          {% if user.is_authenticated %}
+          <!-- Global TMDb search — icon expands into an autocomplete panel. -->
+          <div class="relative" x-data="navSearch()" @keydown.escape.window="open=false" @click.outside="open=false">
+            <button @click="toggle()" class="hover:text-white/70 transition" aria-label="Search">
+              <i class="fas fa-magnifying-glass text-lg"></i>
+            </button>
+            <div x-show="open" x-cloak
+                 class="absolute right-0 top-full mt-2 w-[92vw] sm:w-[480px] max-w-[calc(100vw-2rem)] bg-netflix-dark border border-white/10 rounded-lg shadow-2xl overflow-hidden">
+              <div class="flex items-center bg-[#222] px-3">
+                <i class="fas fa-magnifying-glass text-white/40"></i>
+                <input x-ref="input" x-model="q" @input="onType()"
+                       placeholder="Search any movie or show…"
+                       class="flex-1 bg-transparent px-3 py-3 focus:outline-none text-white placeholder-white/40 text-sm">
+                <i x-show="loading" class="fas fa-spinner fa-spin text-white/40"></i>
+              </div>
+              <div class="max-h-[60vh] overflow-y-auto">
+                <p x-show="msg" x-text="msg" class="text-white/50 text-sm p-4"></p>
+                <template x-for="r in results" :key="r.id">
+                  <div class="flex items-center gap-3 p-2 hover:bg-white/5 border-b border-white/5">
+                    <div class="w-10 h-14 rounded overflow-hidden bg-white/10 shrink-0">
+                      <template x-if="r.poster"><img :src="r.poster" class="w-full h-full object-cover"></template>
+                    </div>
+                    <div class="min-w-0 flex-1">
+                      <div class="text-sm font-medium truncate" x-text="r.title"></div>
+                      <div class="text-xs text-white/40">
+                        <span x-text="r.year"></span>
+                        <span x-show="r.rating" class="text-yellow-400 ml-1"><i class="fas fa-star text-[10px]"></i> <span x-text="r.rating ? r.rating.toFixed(1) : ''"></span></span>
+                        <span class="uppercase ml-1" x-text="r.media_type"></span>
+                      </div>
+                    </div>
+                    <!-- Available (in library or fulfilled) → green tick + Watch -->
+                    <template x-if="r.in_library || r.request_status === 'fulfilled'">
+                      <button @click="window.openMovie && r.library_id && openMovie(r.library_id); open=false"
+                              class="shrink-0 text-xs font-semibold text-green-400 hover:text-green-300 px-3 py-1.5 rounded flex items-center gap-1">
+                        <i class="fas fa-circle-check"></i><span x-text="r.library_id ? 'Watch' : 'Added'"></span>
+                      </button>
+                    </template>
+                    <!-- Requested → green tick (your request is in) -->
+                    <template x-if="!r.in_library && r.request_status === 'pending'">
+                      <span class="shrink-0 text-xs px-3 py-1.5 rounded text-green-400 flex items-center gap-1">
+                        <i class="fas fa-circle-check"></i>Requested
+                      </span>
+                    </template>
+                    <!-- Approved & being added → spinner -->
+                    <template x-if="!r.in_library && r.request_status === 'approved'">
+                      <span class="shrink-0 text-xs px-3 py-1.5 rounded border border-white/15 text-white/60 flex items-center gap-1">
+                        <i class="fas fa-circle-notch fa-spin"></i>Adding…
+                      </span>
+                    </template>
+                    <!-- Submitting (brief) → spinner -->
+                    <template x-if="!r.in_library && !r.request_status && r._submitting">
+                      <span class="shrink-0 text-xs px-3 py-1.5 rounded border border-white/15 text-white/60 flex items-center gap-1">
+                        <i class="fas fa-circle-notch fa-spin"></i>…
+                      </span>
+                    </template>
+                    <!-- Not requested (or previously rejected) → Request, or "Server full" if quota tripped -->
+                    <template x-if="!r.in_library && !r._submitting && r.request_status !== 'pending' && r.request_status !== 'approved' && r.request_status !== 'fulfilled'">
+                      <button @click="requestMovie(r)" :disabled="quotaBlocked"
+                              :title="quotaBlocked ? 'Server full — request quota reached' : ''"
+                              class="shrink-0 text-xs font-semibold px-3 py-1.5 rounded border border-white/20 hover:bg-white/10 disabled:opacity-60">
+                        <span x-show="!quotaBlocked">Request</span><span x-show="quotaBlocked">Server full</span>
+                      </button>
+                    </template>
+                  </div>
+                </template>
+                <button x-show="page < totalPages" @click="more()"
+                        class="w-full py-3 text-sm text-white/60 hover:text-white hover:bg-white/5">
+                  <i class="fas fa-chevron-down mr-1"></i>Load more
+                </button>
+              </div>
+            </div>
+          </div>
+          <a href="{% url 'parties:create' %}" class="hidden md:inline-flex items-center gap-2 bg-netflix-red hover:bg-netflix-red/90 text-sm font-semibold px-4 py-1.5 rounded transition">
+            <i class="fas fa-plus"></i> New Party
+          </a>
+          {% include 'notifications/_bell.html' %}
+
+          <!-- Profile -->
+          <div class="relative" x-data="{ open:false }">
+            <button @click="open = !open" class="flex items-center gap-1">
+              <span class="w-8 h-8 rounded bg-netflix-red flex items-center justify-center text-sm font-bold">
+                {{ user.username|first|upper }}
+              </span>
+              <i class="fas fa-caret-down text-xs"></i>
+            </button>
+            <div x-show="open" @click.outside="open=false" x-cloak
+                 class="absolute right-0 mt-2 w-56 bg-black/95 border border-white/10 rounded shadow-xl py-2 text-sm">
+              {# Server-storage quota — admins are unlimited so we hide the chip for them. #}
+              {% if request_quota and not request_quota.unlimited %}
+              <div class="px-4 py-2 border-b border-white/10">
+                <div class="flex items-center justify-between text-[11px] text-white/60 mb-1">
+                  <span><i class="fas fa-server mr-1"></i>Server storage</span>
+                  <span class="font-mono {% if request_quota.blocked %}text-netflix-red{% endif %}">{{ request_quota.used_label }} / {{ request_quota.limit_label }}</span>
+                </div>
+                <div class="h-1.5 bg-white/10 rounded overflow-hidden">
+                  <div class="h-full {% if request_quota.blocked %}bg-netflix-red{% else %}bg-netflix-red/80{% endif %}"
+                       style="width: {{ request_quota.percent }}%"></div>
+                </div>
+                {% if request_quota.blocked %}
+                <p class="text-[10px] text-netflix-red mt-1.5 leading-tight">Server full — no new requests until existing ones are reviewed.</p>
+                {% endif %}
+              </div>
+              {% endif %}
+              <a href="{% url 'catalog:library' %}" class="block px-4 py-2 hover:bg-white/10">Movies</a>
+              <a href="{% url 'parties:my_parties' %}" class="block px-4 py-2 hover:bg-white/10">My Parties</a>
+              <a href="{% url 'catalog:my_requests' %}" class="block px-4 py-2 hover:bg-white/10">My Requests</a>
+              <a href="{% url 'schedule:calendar' %}" class="block px-4 py-2 hover:bg-white/10">Calendar</a>
+              <a href="{% url 'friends:list' %}" class="block px-4 py-2 hover:bg-white/10">Friends</a>
+              {% if user.is_staff %}
+              <div class="border-t border-white/10 my-1"></div>
+              <a href="{% url 'admin_dashboard' %}" class="block px-4 py-2 hover:bg-white/10 text-netflix-red font-semibold"><i class="fas fa-gauge-high mr-1"></i>Admin</a>
+              <a href="{% url 'catalog:upload' %}" class="block px-4 py-2 hover:bg-white/10">+ Upload movie</a>
+              <div class="border-t border-white/10 my-1"></div>
+              {% endif %}
+              <a href="{% url 'profile' %}" class="block px-4 py-2 hover:bg-white/10">Profile</a>
+              <div class="border-t border-white/10 my-1"></div>
+              <a href="{% url 'logout' %}" class="block px-4 py-2 hover:bg-white/10">Sign out of Lisa</a>
+            </div>
+          </div>
+          {% else %}
+          <a href="{% url 'login' %}"
+             class="bg-netflix-red hover:bg-netflix-red/90 text-white text-sm font-semibold px-4 py-1.5 rounded transition">
+            Sign In
+          </a>
+          {% endif %}
+
+          <!-- Mobile menu toggle -->
+          <button class="md:hidden text-xl" @click="mobileOpen = !mobileOpen" aria-label="Menu">
+            <i class="fas" :class="mobileOpen ? 'fa-times' : 'fa-bars'"></i>
+          </button>
+        </div>
+      </nav>
+    </div>
+
+    <!-- Mobile menu -->
+    <div x-show="mobileOpen" x-cloak class="md:hidden bg-netflix-black/95 border-t border-white/10">
+      <ul class="flex flex-col py-2 text-sm">
+        <li><a href="{% url 'home' %}" class="block px-6 py-3 hover:bg-white/10">Home</a></li>
+        {% if user.is_authenticated %}
+        {% if user.is_staff %}<li><a href="{% url 'admin_dashboard' %}" class="block px-6 py-3 hover:bg-white/10 text-netflix-red font-semibold"><i class="fas fa-gauge-high mr-1"></i>Admin</a></li>{% endif %}
+        <li><a href="{% url 'parties:create' %}" class="block px-6 py-3 hover:bg-white/10 text-netflix-red font-semibold">+ New Party</a></li>
+        <li><a href="{% url 'catalog:library' %}" class="block px-6 py-3 hover:bg-white/10">Movies</a></li>
+        <li><a href="{% url 'parties:my_parties' %}" class="block px-6 py-3 hover:bg-white/10">My Parties</a></li>
+        <li><a href="{% url 'catalog:my_requests' %}" class="block px-6 py-3 hover:bg-white/10">My Requests</a></li>
+        <li><a href="{% url 'schedule:calendar' %}" class="block px-6 py-3 hover:bg-white/10">Calendar</a></li>
+        <li><a href="{% url 'parties:join' %}" class="block px-6 py-3 hover:bg-white/10">Join with code</a></li>
+        <li><a href="{% url 'friends:list' %}" class="block px-6 py-3 hover:bg-white/10">Friends</a></li>
+        <li><a href="{% url 'profile' %}" class="block px-6 py-3 hover:bg-white/10">Profile</a></li>
+        <li><a href="{% url 'logout' %}" class="block px-6 py-3 hover:bg-white/10">Sign out</a></li>
+        {% else %}
+        <li><a href="{% url 'login' %}" class="block px-6 py-3 hover:bg-white/10">Sign In</a></li>
+        <li><a href="{% url 'register' %}" class="block px-6 py-3 hover:bg-white/10">Get Started</a></li>
+        {% endif %}
+      </ul>
+    </div>
+  </header>
+
+  <main>
+    {% block content %}
+    {% endblock %}
+
+    <!-- FOOTER (Netflix style) -->
+    <footer id="contact" class="bg-netflix-dark text-netflix-gray border-t border-white/5 mt-16">
+      <div class="max-w-5xl mx-auto px-6 py-12">
+        <!-- Socials -->
+        <div class="flex gap-5 mb-6 text-xl">
+          {% if content.fb_link %}<a href="{{ content.fb_link }}" target="_blank" class="hover:text-white transition"><i class="fab fa-facebook-f"></i></a>{% endif %}
+          {% if content.ig_username %}<a href="https://www.instagram.com/{{ content.ig_username }}/" target="_blank" class="hover:text-white transition"><i class="fab fa-instagram"></i></a>{% endif %}
+          {% if content.x_link %}<a href="{{ content.x_link }}" target="_blank" class="hover:text-white transition"><i class="fab fa-twitter"></i></a>{% endif %}
+          {% if content.linkedin_link %}<a href="{{ content.linkedin_link }}" target="_blank" class="hover:text-white transition"><i class="fab fa-linkedin-in"></i></a>{% endif %}
+        </div>
+
+        <!-- Link columns -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm mb-8">
+          <a href="{% url 'home' %}" class="hover:underline">Home</a>
+          <a href="{% url 'journey_voima' %}" class="hover:underline">Our Journey</a>
+          <a href="{% url 'news_voima' %}" class="hover:underline">News</a>
+          <a href="{% url 'contact_voima' %}" class="hover:underline">Contact Us</a>
+          {% if content.email_1 %}<a href="mailto:{{ content.email_1 }}" class="hover:underline">{{ content.email_1 }}</a>{% endif %}
+          {% if content.phone_1 %}<a href="tel:{{ content.phone_1 }}" class="hover:underline">{{ content.phone_1 }}</a>{% endif %}
+          {% if content.location_name %}<a href="{{ content.location_google_maps }}" target="_blank" class="hover:underline">{{ content.location_name }}</a>{% endif %}
+        </div>
+
+        <!-- Newsletter -->
+        <form method="POST" action="" class="flex flex-col sm:flex-row gap-2 max-w-md mb-8">
+          {% csrf_token %}
+          <input name="email" type="email" required placeholder="Email address"
+                 class="flex-1 px-4 py-2 bg-black/60 border border-white/20 rounded text-white placeholder-white/40 focus:outline-none focus:border-white" />
+          <button type="submit" class="px-6 py-2 rounded bg-netflix-red hover:bg-netflix-red/90 text-white font-semibold transition">
+            Subscribe
+          </button>
+        </form>
+
+        <p class="text-xs text-netflix-gray">© {% now "Y" %} Lisa. All rights reserved.</p>
+        <p class="text-xs text-netflix-gray mt-2">
+          Made with <i class="fa-solid fa-heart text-netflix-red"></i>
+          by <a target="_blank" rel="noopener noreferrer" href="https://giftchristian.me" class="hover:underline">GCL</a>
+        </p>
+      </div>
+    </footer>
+
+    <!-- Back to Top -->
+    <button id="back-to-top"
+        class="fixed bottom-8 right-8 w-12 h-12 bg-netflix-red text-white rounded-full shadow-lg flex items-center justify-center opacity-0 invisible transition-all duration-300 z-50">
+        <i class="fas fa-arrow-up"></i>
+    </button>
+
+    {# Global movie-detail modal + nav-search, mounted once for authenticated users (window.openMovie / window.openTmdb). #}
+    {% if user.is_authenticated %}
+    {% include 'catalog/_movie_modal.html' %}
+    {# Django-bound config + seeded quota flag for nav_search.js. #}
+    <script>
+      window.LISA = Object.assign(window.LISA || {}, {
+        searchUrl: "{% url 'catalog:search' %}",
+        requestUrl: "{% url 'catalog:request' %}",
+        stateUrl: "{% url 'catalog:request_state' %}",
+        quotaBlocked: {{ request_quota.blocked|yesno:"true,false"|default:"false" }},
+      });
+    </script>
+    <script src="{% static 'js/nav_search.js' %}" defer></script>
+    {% endif %}
+
+    {# Django flash messages, handed off to static/js/toasts.js. #}
+    {% if messages %}
+    <script>
+      window.LISA_MESSAGES = [
+        {% for message in messages %}{ text: {{ message|escapejs|stringformat:'"%s"' }}, tag: "{{ message.tags|default:'info' }}" }{% if not forloop.last %},{% endif %}{% endfor %}
+      ];
+    </script>
+    <script src="{% static 'js/toasts.js' %}" defer></script>
+    {% endif %}
+  </main>
+
+  <script src="{% static 'js/home.js' %}" defer></script>
+  <!-- Alpine LAST: all x-data component factories (navSearch, movieModal, room…) are defined before it initializes. -->
+  <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,48 @@
+{% extends 'yuzzaz/full_base.html' %}
+{% block title %}| Notifications{% endblock %}
+{% block content %}
+<section class="pt-24 md:pt-28 px-4 md:px-12 pb-16 min-h-screen max-w-3xl mx-auto">
+
+  <h1 class="text-3xl md:text-4xl font-extrabold mb-8">Notifications</h1>
+
+  {% if page.object_list %}
+  <div class="space-y-2">
+    {% for n in page.object_list %}
+    <a href="{{ n.url|default:'#' }}"
+       class="flex gap-3 items-start bg-white/5 border border-white/10 rounded-lg px-4 py-3 hover:bg-white/10 transition {% if n.url %}{% else %}pointer-events-none{% endif %}">
+      <span class="mt-1 w-8 h-8 rounded-full bg-netflix-red/80 flex items-center justify-center text-xs shrink-0">
+        {% if n.kind == 'friend_request' or n.kind == 'friend_accepted' %}<i class="fas fa-user-group"></i>
+        {% elif n.kind == 'party_invite' %}<i class="fas fa-film"></i>
+        {% else %}<i class="fas fa-bell"></i>{% endif %}
+      </span>
+      <div class="min-w-0 flex-1">
+        <div class="text-sm font-semibold">{{ n.title }}</div>
+        {% if n.body %}<div class="text-sm text-white/50 mt-0.5">{{ n.body }}</div>{% endif %}
+        <div class="text-xs text-white/30 mt-1">{{ n.created_at|date:'M j, Y · g:i A' }}</div>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+
+  <!-- Pagination -->
+  {% if page.has_other_pages %}
+  <div class="flex items-center justify-center gap-4 mt-8 text-sm">
+    {% if page.has_previous %}
+    <a href="?page={{ page.previous_page_number }}" class="px-4 py-2 rounded bg-white/10 hover:bg-white/20">Previous</a>
+    {% endif %}
+    <span class="text-white/50">Page {{ page.number }} of {{ page.paginator.num_pages }}</span>
+    {% if page.has_next %}
+    <a href="?page={{ page.next_page_number }}" class="px-4 py-2 rounded bg-white/10 hover:bg-white/20">Next</a>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {% else %}
+  <div class="text-center py-16 text-white/50">
+    <i class="fas fa-bell-slash text-4xl mb-3 text-white/20"></i>
+    <p>No notifications yet.</p>
+  </div>
+  {% endif %}
+
+</section>
+{% endblock %}

@@ -1,0 +1,93 @@
+{% extends 'yuzzaz/full_base.html' %}
+{% load schedule_extras %}
+{% block title %}| Calendar{% endblock %}
+{% block content %}
+<section class="pt-24 md:pt-28 px-4 md:px-12 pb-16 min-h-screen max-w-6xl mx-auto" x-data="{ showFeed:false }">
+
+  <!-- Header -->
+  <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
+    <div>
+      <h1 class="text-3xl md:text-4xl font-extrabold">Movie Calendar</h1>
+      <p class="text-white/60 mt-1">Your scheduled parties and invitations.</p>
+    </div>
+    <div class="flex items-center gap-2">
+      <button @click="showFeed=!showFeed" class="px-4 py-2 rounded bg-white/10 hover:bg-white/20 text-sm">
+        <i class="fas fa-rss mr-2"></i>Subscribe
+      </button>
+      <a href="{% url 'parties:create' %}" class="px-4 py-2 rounded bg-netflix-red hover:bg-netflix-red/90 text-sm font-semibold">
+        <i class="fas fa-plus mr-2"></i>Schedule a party
+      </a>
+    </div>
+  </div>
+
+  <!-- Subscribe panel -->
+  <div x-show="showFeed" x-cloak class="mb-6 bg-white/5 border border-white/10 rounded-lg p-4">
+    <p class="text-sm text-white/70 mb-2">Add this URL to Google / Apple Calendar as a subscribed calendar — your Lisa movie nights will appear automatically.</p>
+    <div class="flex gap-2">
+      <input readonly value="{{ feed_url }}" id="feed-url"
+             class="flex-1 bg-[#333] rounded px-3 py-2 text-sm text-white/80 font-mono">
+      <button onclick="navigator.clipboard.writeText(document.getElementById('feed-url').value); this.textContent='Copied!'"
+              class="px-4 py-2 rounded bg-netflix-red hover:bg-netflix-red/90 text-sm font-semibold">Copy</button>
+    </div>
+  </div>
+
+  <!-- Month nav -->
+  <div class="flex items-center justify-between mb-3">
+    <a href="?year={{ prev.year }}&month={{ prev.month }}" class="w-9 h-9 rounded-full hover:bg-white/10 flex items-center justify-center"><i class="fas fa-chevron-left"></i></a>
+    <h2 class="text-xl font-bold">{{ month_name }} {{ year }}</h2>
+    <a href="?year={{ next.year }}&month={{ next.month }}" class="w-9 h-9 rounded-full hover:bg-white/10 flex items-center justify-center"><i class="fas fa-chevron-right"></i></a>
+  </div>
+
+  <!-- Grid -->
+  <div class="grid grid-cols-7 gap-px bg-white/10 border border-white/10 rounded-lg overflow-hidden text-sm">
+    {% for label in weekday_labels %}
+    <div class="bg-netflix-dark py-2 text-center text-white/50 font-semibold">{{ label }}</div>
+    {% endfor %}
+
+    {% for week in weeks %}
+      {% for day in week %}
+      <div class="bg-netflix-dark min-h-[92px] p-1.5 align-top
+                  {% if day == 0 %}opacity-30{% endif %}
+                  {% if day == today.day and month == today.month and year == today.year %}ring-1 ring-inset ring-netflix-red{% endif %}">
+        {% if day != 0 %}
+          <div class="text-xs text-white/50 mb-1">{{ day }}</div>
+          {% for party, local in by_day|dictget:day %}
+          <a href="{% url 'parties:room' party.access_code %}"
+             class="block mb-1 px-1.5 py-1 rounded bg-netflix-red/80 hover:bg-netflix-red text-[11px] leading-tight truncate"
+             title="{{ party.name }} — {{ local|time:'g:i A' }}">
+            <span class="font-semibold">{{ local|time:'g:i A' }}</span> {{ party.name }}
+          </a>
+          {% endfor %}
+        {% endif %}
+      </div>
+      {% endfor %}
+    {% endfor %}
+  </div>
+
+  <!-- Upcoming list -->
+  <h2 class="text-lg font-bold mt-10 mb-3">Upcoming</h2>
+  {% if upcoming %}
+  <div class="space-y-2">
+    {% for party, local in upcoming %}
+    <div class="flex items-center gap-4 bg-white/5 border border-white/10 rounded-lg px-4 py-3">
+      <div class="text-center shrink-0 w-14">
+        <div class="text-netflix-red font-bold text-lg leading-none">{{ local|date:'j' }}</div>
+        <div class="text-[11px] text-white/50 uppercase">{{ local|date:'M' }}</div>
+      </div>
+      <div class="min-w-0 flex-1">
+        <div class="font-semibold truncate">{{ party.name }}</div>
+        <div class="text-sm text-white/50">{{ local|date:'l, g:i A' }} · host {{ party.host.get_full_name|default:party.host.email }}</div>
+      </div>
+      <a href="{% url 'schedule:ics_event' party.access_code %}" class="px-3 py-1.5 rounded bg-white/10 hover:bg-white/20 text-sm" title="Add to your calendar">
+        <i class="fas fa-calendar-plus"></i>
+      </a>
+      <a href="{% url 'parties:room' party.access_code %}" class="px-3 py-1.5 rounded bg-netflix-red hover:bg-netflix-red/90 text-sm font-semibold">Open</a>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="text-white/50">Nothing scheduled yet. <a href="{% url 'parties:create' %}" class="text-netflix-red hover:underline">Schedule a movie night</a>.</p>
+  {% endif %}
+
+</section>
+{% endblock %}

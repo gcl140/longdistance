@@ -1,0 +1,180 @@
+{% extends 'yuzzaz/full_base.html' %}
+{% load static %}
+{% block title %}| Movies{% endblock %}
+{% block content %}
+<section class="pt-24 md:pt-28 px-4 md:px-12 pb-16 min-h-screen max-w-7xl mx-auto">
+
+  <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
+    <div>
+      <h1 class="text-3xl md:text-4xl font-extrabold">Movies</h1>
+      <p class="text-white/60 mt-1">Pick something and start watching together.</p>
+    </div>
+    {% if user.is_staff %}
+    <a href="{% url 'catalog:upload' %}" class="px-5 py-2.5 rounded bg-netflix-red hover:bg-netflix-red/90 font-semibold transition">
+      <i class="fas fa-upload mr-2"></i>Add a movie
+    </a>
+    {% endif %}
+  </div>
+
+  <!-- TMDb search -->
+  <div class="relative mb-10 max-w-2xl" x-data="movieSearch()" @click.outside="open=false">
+    <div class="flex items-center bg-[#222] rounded-lg px-4">
+      <i class="fas fa-magnifying-glass text-white/40"></i>
+      <input x-model="q" @input="onType()" @focus="if(results.length) open=true"
+             placeholder="Search any movie or show…"
+             class="flex-1 bg-transparent px-3 py-3 focus:outline-none text-white placeholder-white/40">
+      <i x-show="loading" class="fas fa-spinner fa-spin text-white/40"></i>
+    </div>
+
+    <!-- Dropdown -->
+    <div x-show="open" x-cloak class="absolute z-50 mt-2 w-full bg-netflix-dark border border-white/10 rounded-lg shadow-2xl max-h-[60vh] overflow-y-auto">
+      <p x-show="msg" x-text="msg" class="text-white/50 text-sm p-4"></p>
+      <template x-for="r in results" :key="r.id">
+        <div class="flex items-center gap-3 p-2 hover:bg-white/5 border-b border-white/5">
+          <div class="w-10 h-14 rounded overflow-hidden bg-white/10 shrink-0">
+            <template x-if="r.poster"><img :src="r.poster" class="w-full h-full object-cover"></template>
+          </div>
+          <div class="min-w-0 flex-1">
+            <div class="text-sm font-medium truncate" x-text="r.title"></div>
+            <div class="text-xs text-white/40">
+              <span x-text="r.year"></span>
+              <span x-show="r.rating" class="text-yellow-400 ml-1"><i class="fas fa-star text-[10px]"></i> <span x-text="r.rating ? r.rating.toFixed(1) : ''"></span></span>
+              <span class="uppercase ml-1" x-text="r.media_type"></span>
+            </div>
+          </div>
+          <!-- action -->
+          <template x-if="r.in_library || r.request_status === 'fulfilled'">
+            <button @click="r.library_id && openMovie(r.library_id); open=false" class="shrink-0 text-xs font-semibold text-green-400 hover:text-green-300 px-3 py-1.5 rounded flex items-center gap-1">
+              <i class="fas fa-circle-check"></i><span x-text="r.library_id ? 'Watch' : 'Added'"></span>
+            </button>
+          </template>
+          <template x-if="!r.in_library && r.request_status === 'pending'">
+            <span class="shrink-0 text-xs px-3 py-1.5 rounded text-green-400 flex items-center gap-1">
+              <i class="fas fa-circle-check"></i>Requested
+            </span>
+          </template>
+          <template x-if="!r.in_library && r.request_status === 'approved'">
+            <span class="shrink-0 text-xs px-3 py-1.5 rounded border border-white/15 text-white/60 flex items-center gap-1">
+              <i class="fas fa-circle-notch fa-spin"></i>Adding…
+            </span>
+          </template>
+          <template x-if="!r.in_library && !r.request_status && r._submitting">
+            <span class="shrink-0 text-xs px-3 py-1.5 rounded border border-white/15 text-white/60 flex items-center gap-1">
+              <i class="fas fa-circle-notch fa-spin"></i>…
+            </span>
+          </template>
+          <template x-if="!r.in_library && !r._submitting && r.request_status !== 'pending' && r.request_status !== 'approved' && r.request_status !== 'fulfilled'">
+            <button @click="requestMovie(r)"
+                    class="shrink-0 text-xs font-semibold px-3 py-1.5 rounded border border-white/20 hover:bg-white/10">Request</button>
+          </template>
+        </div>
+      </template>
+      <button x-show="page < totalPages" @click="more()" class="w-full py-3 text-sm text-white/60 hover:text-white hover:bg-white/5">
+        <i class="fas fa-chevron-down mr-1"></i>Load more
+      </button>
+    </div>
+  </div>
+
+  <!-- Genre filter -->
+  {% if genres %}
+  <div class="flex flex-wrap gap-2 mb-8">
+    <a href="{% url 'catalog:library' %}"
+       class="text-sm px-3 py-1.5 rounded-full border transition {% if not active_genre %}bg-netflix-red border-netflix-red font-semibold{% else %}border-white/15 text-white/70 hover:bg-white/10{% endif %}">
+      All
+    </a>
+    {% for g in genres %}
+    <a href="?genre={{ g|urlencode }}"
+       class="text-sm px-3 py-1.5 rounded-full border transition {% if g == active_genre %}bg-netflix-red border-netflix-red font-semibold{% else %}border-white/15 text-white/70 hover:bg-white/10{% endif %}">
+      {{ g }}
+    </a>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% if movies %}
+  <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+    {% for m in movies %}
+    <div class="group">
+      <div onclick="openMovie({{ m.id }})" class="relative aspect-[2/3] rounded-lg overflow-hidden bg-white/5 cursor-pointer" {% if m.is_processing %}data-processing="{{ m.id }}"{% endif %}>
+        {% if m.poster_src %}
+        <img src="{{ m.poster_src }}" alt="{{ m.title }}" class="w-full h-full object-cover">
+        {% else %}
+        <div class="w-full h-full flex items-center justify-center text-white/20"><i class="fas fa-film text-3xl"></i></div>
+        {% endif %}
+        {% if m.is_processing %}
+        <div class="absolute top-2 left-2 z-10 bg-black/75 text-[10px] px-2 py-1 rounded flex items-center gap-1">
+          <i class="fas fa-spinner fa-spin"></i> Converting…
+        </div>
+        {% endif %}
+        <!-- hover overlay -->
+        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition flex flex-col justify-end p-3">
+          {% if m.is_processing %}
+          <span class="text-center text-xs text-white/70 bg-white/10 rounded py-2"><i class="fas fa-spinner fa-spin mr-1"></i>Converting to MP4…</span>
+          {% else %}
+          <span class="text-center text-sm font-bold bg-netflix-red rounded py-2"><i class="fas fa-circle-info mr-1"></i>Details</span>
+          {% endif %}
+        </div>
+      </div>
+      <div class="flex items-start justify-between gap-2 mt-2">
+        <div class="min-w-0">
+          <h3 class="text-sm font-semibold truncate">{{ m.title }}</h3>
+          <p class="text-xs text-white/40">{{ m.year }}</p>
+        </div>
+        {% if user.is_staff %}
+        <form method="POST" action="{% url 'catalog:delete' m.id %}" onsubmit="return confirm('Delete this movie?')" class="shrink-0">{% csrf_token %}
+          <button title="Delete" class="text-white/30 hover:text-netflix-red text-xs pt-0.5"><i class="fas fa-trash"></i></button>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Pagination -->
+  {% if page.has_other_pages %}
+  <div class="flex items-center justify-center gap-4 mt-10 text-sm">
+    {% if page.has_previous %}
+    <a href="?page={{ page.previous_page_number }}{% if active_genre %}&genre={{ active_genre|urlencode }}{% endif %}"
+       class="px-4 py-2 rounded bg-white/10 hover:bg-white/20"><i class="fas fa-chevron-left mr-1"></i>Previous</a>
+    {% endif %}
+    <span class="text-white/50">Page {{ page.number }} of {{ page.paginator.num_pages }}</span>
+    {% if page.has_next %}
+    <a href="?page={{ page.next_page_number }}{% if active_genre %}&genre={{ active_genre|urlencode }}{% endif %}"
+       class="px-4 py-2 rounded bg-white/10 hover:bg-white/20">Next<i class="fas fa-chevron-right ml-1"></i></a>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {% elif active_genre %}
+  <div class="text-center py-20 text-white/50">
+    <i class="fas fa-filter text-5xl mb-4 text-white/20"></i>
+    <p class="mb-4">No movies in “{{ active_genre }}” yet.</p>
+    <a href="{% url 'catalog:library' %}" class="text-netflix-red hover:underline">Clear filter</a>
+  </div>
+  {% else %}
+  <div class="text-center py-20 text-white/50">
+    <i class="fas fa-film text-5xl mb-4 text-white/20"></i>
+    <p class="mb-4">No movies in the library yet.</p>
+    {% if user.is_staff %}
+    <a href="{% url 'catalog:upload' %}" class="text-netflix-red hover:underline">Upload the first one</a>
+    {% else %}
+    <p class="text-sm">Ask an admin to add some.</p>
+    {% endif %}
+  </div>
+  {% endif %}
+
+</section>
+
+{# Movie modal is mounted globally in full_base.html. #}
+
+<script>
+  window.LISA_LIBRARY = {
+    searchUrl: "{% url 'catalog:search' %}",
+    requestUrl: "{% url 'catalog:request' %}",
+    stateUrl: "{% url 'catalog:request_state' %}",
+    statusUrlTmpl: "{% url 'catalog:status' 0 %}",
+    quotaBlocked: {{ request_quota.blocked|yesno:"true,false"|default:"false" }},
+  };
+</script>
+<script src="{% static 'js/library.js' %}" defer></script>
+{% endblock %}

@@ -1,0 +1,121 @@
+{% extends 'yuzzaz/full_base.html' %}
+{% load static %}
+{% block title %}| New Party{% endblock %}
+{% block content %}
+<section class="pt-24 md:pt-28 px-4 pb-16 min-h-screen flex justify-center">
+  <div class="w-full max-w-lg">
+    <a href="{% url 'parties:my_parties' %}" class="text-white/50 hover:text-white text-sm"><i class="fas fa-arrow-left mr-2"></i>Back</a>
+    <h1 class="text-3xl font-extrabold mt-3 mb-6">Start a Watch Party</h1>
+
+    {% if not has_movies %}
+    <div class="bg-white/5 border border-white/10 rounded-xl p-6 text-center text-white/60">
+      <i class="fas fa-film text-3xl text-white/20 mb-3"></i>
+      <p>There are no playable movies in the library yet.</p>
+      {% if user.is_staff %}
+      <a href="{% url 'catalog:upload' %}" class="text-netflix-red hover:underline">Add a movie first</a>.
+      {% else %}
+      <p class="text-sm mt-1">Ask an admin to add one, or <a href="{% url 'catalog:library' %}" class="text-netflix-red hover:underline">browse Movies</a>.</p>
+      {% endif %}
+    </div>
+    {% else %}
+    <form method="POST" class="space-y-5 bg-white/5 border border-white/10 rounded-xl p-6"
+          x-data="createForm()" x-init="load()" @submit="if(!selected){$event.preventDefault()}">
+      {% csrf_token %}
+
+      <!-- Movie picker (required) -->
+      <div>
+        <label class="block text-sm text-white/70 mb-1">Movie <span class="text-netflix-red">*</span></label>
+        <input type="hidden" name="movie_id" :value="selected ? selected.id : ''">
+
+        <!-- Selected -->
+        <template x-if="selected">
+          <div class="flex items-center gap-3 bg-[#333] rounded p-2">
+            <div class="w-10 h-14 rounded overflow-hidden bg-white/10 shrink-0">
+              <template x-if="selected.poster"><img :src="selected.poster" class="w-full h-full object-cover"></template>
+            </div>
+            <div class="min-w-0 flex-1">
+              <div class="font-semibold truncate" x-text="selected.title"></div>
+              <div class="text-xs text-white/40" x-text="selected.year"></div>
+            </div>
+            <button type="button" @click="selected=null; q=''; open=true" class="text-white/50 hover:text-white text-sm px-2">Change</button>
+          </div>
+        </template>
+
+        <!-- Search + dropdown -->
+        <div class="relative" x-show="!selected" @click.outside="open=false">
+          <input x-model="q" @focus="open=true" placeholder="Search the library…"
+                 class="w-full bg-[#333] rounded px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-netflix-red">
+          <div x-show="open" x-cloak class="absolute z-50 mt-2 w-full bg-netflix-dark border border-white/10 rounded-lg shadow-2xl max-h-72 overflow-y-auto">
+            <template x-for="m in filtered()" :key="m.id">
+              <button type="button" @click="choose(m)" class="w-full flex items-center gap-3 p-2 hover:bg-white/5 text-left border-b border-white/5">
+                <div class="w-9 h-12 rounded overflow-hidden bg-white/10 shrink-0">
+                  <template x-if="m.poster"><img :src="m.poster" class="w-full h-full object-cover"></template>
+                </div>
+                <div class="min-w-0">
+                  <div class="text-sm font-medium truncate" x-text="m.title"></div>
+                  <div class="text-xs text-white/40" x-text="m.year"></div>
+                </div>
+              </button>
+            </template>
+            <p x-show="!filtered().length" class="text-white/40 text-sm p-3" x-text="movies.length ? 'No match.' : 'Loading…'"></p>
+          </div>
+        </div>
+        <p class="text-xs text-white/40 mt-1">Everyone in the room watches this together.</p>
+      </div>
+
+      <!-- Party name -->
+      <div>
+        <label class="block text-sm text-white/70 mb-1">Party name <span class="text-white/30">(optional)</span></label>
+        <input name="name" placeholder="Friday Movie Night"
+               class="w-full bg-[#333] rounded px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-netflix-red">
+      </div>
+
+      <!-- Schedule -->
+      <div>
+        <label class="block text-sm text-white/70 mb-1">Schedule for <span class="text-white/30">(optional — leave blank to start now)</span></label>
+        <input name="scheduled_for" type="datetime-local"
+               class="w-full bg-[#333] rounded px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-netflix-red">
+        <p class="text-xs text-white/40 mt-1">Scheduled parties show up on your calendar and can be added to Google/Apple Calendar.</p>
+      </div>
+
+      <!-- Invite friends (optional) -->
+      {% if contacts %}
+      <div>
+        <label class="block text-sm text-white/70 mb-1">Invite friends <span class="text-white/30">(optional)</span></label>
+        <div class="max-h-44 overflow-y-auto bg-[#333] rounded p-2 space-y-1">
+          {% for c in contacts %}
+          <label class="flex items-center gap-3 px-2 py-1.5 rounded hover:bg-white/5 cursor-pointer text-sm">
+            <input type="checkbox" name="invite_friends" value="{{ c.friend_id }}" class="accent-netflix-red h-4 w-4">
+            <span class="w-7 h-7 rounded-full bg-netflix-red/80 flex items-center justify-center text-xs font-bold shrink-0">
+              {{ c.friend.get_full_name|default:c.friend.email|first|upper }}
+            </span>
+            <span class="min-w-0">
+              <span class="block truncate">{{ c.nickname|default:c.friend.get_full_name|default:c.friend.email }}</span>
+              <span class="block text-xs text-white/40 truncate">{{ c.friend.email }}</span>
+            </span>
+          </label>
+          {% endfor %}
+        </div>
+        <p class="text-xs text-white/40 mt-1">They get an in-app ping if they're online, or an email with the code &amp; link if not.</p>
+      </div>
+      {% endif %}
+
+      <label class="flex items-center gap-3 text-sm text-white/80 cursor-pointer">
+        <input type="checkbox" name="is_private" checked class="accent-netflix-red h-5 w-5">
+        Private — only people with the code or an invite can join
+      </label>
+
+      <button type="submit" :disabled="!selected"
+              class="w-full bg-netflix-red hover:bg-netflix-red/90 font-semibold py-3 rounded transition disabled:opacity-50 disabled:cursor-not-allowed">
+        <i class="fas fa-clapperboard mr-2"></i>Create &amp; enter room
+      </button>
+    </form>
+    {% endif %}
+  </div>
+</section>
+
+<script>
+  window.LISA_PARTIES_CREATE = { libraryUrl: "{% url 'catalog:library_json' %}" };
+</script>
+<script src="{% static 'js/parties_create.js' %}" defer></script>
+{% endblock %}

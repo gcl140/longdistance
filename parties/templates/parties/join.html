@@ -1,0 +1,21 @@
+{% extends 'yuzzaz/full_base.html' %}
+{% block title %}| Join Party{% endblock %}
+{% block content %}
+<section class="pt-24 md:pt-28 px-4 pb-16 min-h-screen flex justify-center">
+  <div class="w-full max-w-md text-center">
+    <h1 class="text-3xl font-extrabold mb-2">Join a Watch Party</h1>
+    <p class="text-white/60 mb-6">Enter the code your friend shared with you.</p>
+
+    <form method="POST" action="{% url 'parties:join' %}" class="space-y-4 bg-white/5 border border-white/10 rounded-xl p-6">
+      {% csrf_token %}
+      <input name="access_code" required autocomplete="off" placeholder="e.g. a1B2c3D4"
+             class="w-full bg-[#333] rounded px-4 py-3 text-center font-mono text-lg tracking-widest text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-netflix-red">
+      <button type="submit" class="w-full bg-netflix-red hover:bg-netflix-red/90 font-semibold py-3 rounded transition">
+        <i class="fas fa-right-to-bracket mr-2"></i>Join
+      </button>
+    </form>
+
+    <p class="text-white/50 mt-6">Or <a href="{% url 'parties:create' %}" class="text-netflix-red hover:underline">start your own</a>.</p>
+  </div>
+</section>
+{% endblock %}

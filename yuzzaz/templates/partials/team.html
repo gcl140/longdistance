@@ -1,0 +1,56 @@
+{% load static %}
+
+<!-- From Uiverse.io by Smit-Prajapati --> 
+<div class="card">
+        <button class="mail">
+            {% if member.email %}
+            <a href="mailto:{{ member.email }}">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-mail"><rect width="20" height="16" x="2" y="4" rx="2"></rect><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path></svg>
+            </a>
+            {% endif %}
+        </button>
+        <div class="profile-pic">
+            <img src="{% if member.member_image %}{{ member.member_image.url }}{% else %}{% static 'images/fav.png' %}{% endif %}" alt="Profile picture for {{ member.member_name }}">
+        </div>
+        <div class="bottom">
+            <div class="content">
+                <span class="name">{{ member.member_name }}</span>
+                <span class="about-me">{{ member.member_role | truncatechars:30 }} </span>
+                {% if member.member_bio %}
+                <span class="about-mee text-white text-sm italic font-playfair">{{ member.member_bio | truncatechars:60 }} </span>
+                {% endif %}
+            </div>
+           <div class="bottom-bottom">
+            <div class="social-links-container">
+            {% if member.linkedin_url %}
+            <a href="{{ member.linkedin_url }}" class="social-link" target="_blank" rel="noopener noreferrer">
+                <i class="fab fa-linkedin-in text-white hover:text-maroon-55" id="Subtraction_4" data-name="Subtraction 4"></i>
+            </a>
+            {% endif %}
+            {% if member.twitter_url %}
+            <a href="{{ member.twitter_url }}" class="social-link" target="_blank" rel="noopener noreferrer">
+                <i class="fab fa-twitter text-white hover:text-maroon-55"></i>
+            </a>
+            {% endif %}
+            {% if member.facebook_url %}
+            <a href="{{ member.facebook_url }}" class="social-link" target="_blank" rel="noopener noreferrer">
+                <i class="fab fa-facebook text-white hover:text-maroon-55"></i>
+            </a>
+            {% endif %}
+            {% if member.github_url %}
+            <a href="{{ member.github_url }}" class="social-link" target="_blank" rel="noopener noreferrer">
+                <i class="fab fa-github text-white hover:text-maroon-55"></i>
+            </a>
+            {% endif %}
+            {% if member.instagram_url %}
+            <a href="{{ member.instagram_url }}" class="social-link" target="_blank" rel="noopener noreferrer">
+                <i class="fab fa-instagram text-white hover:text-maroon-55"></i>
+            </a>
+            {% endif %}
+            
+            
+            </div>
+            <button class="button ml-3 hover:border-b-2 hover:border-white" onclick="location.href='{% if member.email %}mailto:{{ member.email }}{% else %}{{ member.linkedin_url }}{% endif %}'">Contact Me</button>
+           </div>
+        </div>
+    </div>

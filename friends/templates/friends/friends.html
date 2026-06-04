@@ -1,0 +1,101 @@
+{% extends 'yuzzaz/full_base.html' %}
+{% load static %}
+{% block title %}| Friends{% endblock %}
+{% block content %}
+<section class="pt-24 md:pt-28 px-4 md:px-12 pb-16 min-h-screen max-w-3xl mx-auto">
+
+  <h1 class="text-3xl md:text-4xl font-extrabold mb-2">Friends</h1>
+  <p class="text-white/60 mb-8">Search by name or email, send a request, then invite them to your watch parties.</p>
+
+  <!-- Add friend: type-ahead search -> send a friend request -->
+  <form method="POST" action="{% url 'friends:request' %}" class="mb-10 relative" x-data="friendSearch()" @click.outside="open=false">
+    {% csrf_token %}
+    <input type="hidden" name="user_id" :value="picked ? picked.id : ''">
+    <div class="flex gap-2">
+      <div class="relative flex-1">
+        <input name="email" x-model="q" @input.debounce.200ms="search()" @focus="open=true"
+               autocomplete="off" placeholder="Search a name or email…"
+               class="w-full bg-[#333] rounded px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-netflix-red">
+        <!-- Suggestions dropdown -->
+        <div x-show="open && (results.length || msg)" x-cloak
+             class="absolute z-50 mt-1 w-full bg-black/95 border border-white/10 rounded-lg shadow-xl py-1 max-h-72 overflow-y-auto">
+          <p x-show="msg" x-text="msg" class="px-4 py-2 text-sm text-white/40"></p>
+          <template x-for="r in results" :key="r.id">
+            <button type="button" @click="pick(r)"
+                    class="w-full flex items-center gap-3 px-4 py-2 hover:bg-white/10 text-left">
+              <span class="w-8 h-8 rounded-full bg-netflix-red/80 flex items-center justify-center text-sm font-bold shrink-0" x-text="r.initial"></span>
+              <span class="min-w-0 flex-1">
+                <span class="block text-sm truncate" x-text="r.name"></span>
+                <span class="block text-xs text-white/50 truncate" x-text="r.email"></span>
+              </span>
+              <span x-show="r.pending" class="text-[10px] text-white/40 shrink-0">requested</span>
+            </button>
+          </template>
+        </div>
+      </div>
+      <button class="px-5 py-3 rounded bg-netflix-red hover:bg-netflix-red/90 font-semibold transition shrink-0">
+        <i class="fas fa-user-plus mr-2"></i>Send request
+      </button>
+    </div>
+    <p x-show="picked" x-cloak class="text-xs text-white/50 mt-2">
+      Requesting <span class="text-white" x-text="picked ? picked.name : ''"></span>
+      · <button type="button" @click="picked=null;q=''" class="text-netflix-red hover:underline">clear</button>
+    </p>
+  </form>
+
+  <!-- Incoming requests -->
+  {% if incoming %}
+  <div class="mb-10" x-data>
+    <h2 class="text-sm font-semibold text-white/60 uppercase tracking-wide mb-3">Friend requests</h2>
+    <div class="space-y-2">
+      {% for fr in incoming %}
+      <div class="flex items-center gap-3 bg-white/5 border border-white/10 rounded-lg px-4 py-3" id="freq-{{ fr.id }}">
+        <span class="w-10 h-10 rounded-full bg-netflix-red/80 flex items-center justify-center font-bold">
+          {{ fr.from_user.get_full_name|default:fr.from_user.email|first|upper }}
+        </span>
+        <div class="min-w-0 flex-1">
+          <div class="font-semibold truncate">{{ fr.from_user.get_full_name|default:fr.from_user.email }}</div>
+          <div class="text-sm text-white/50 truncate">{{ fr.from_user.email }}</div>
+        </div>
+        <button @click="window.respondFriendRequest({{ fr.id }}, 'accept', '#freq-{{ fr.id }}')"
+                class="px-3 py-1.5 rounded bg-netflix-red hover:bg-netflix-red/90 text-sm font-semibold">Approve</button>
+        <button @click="window.respondFriendRequest({{ fr.id }}, 'decline', '#freq-{{ fr.id }}')"
+                class="px-3 py-1.5 rounded bg-white/10 hover:bg-white/20 text-sm">Reject</button>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Favorites -->
+  {% if favorites %}
+  <h2 class="text-sm font-semibold text-white/60 uppercase tracking-wide mb-3 flex items-center gap-2">
+    <i class="fas fa-star text-netflix-red"></i> Favorites
+  </h2>
+  <div class="space-y-2 mb-8">
+    {% for c in favorites %}{% include 'friends/_contact_row.html' %}{% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- All friends -->
+  {% if others %}
+  {% if favorites %}<h2 class="text-sm font-semibold text-white/60 uppercase tracking-wide mb-3">All friends</h2>{% endif %}
+  <div class="space-y-2">
+    {% for c in others %}{% include 'friends/_contact_row.html' %}{% endfor %}
+  </div>
+  {% endif %}
+
+  {% if not contacts and not incoming %}
+  <div class="text-center py-16 text-white/50">
+    <i class="fas fa-user-group text-4xl mb-3 text-white/20"></i>
+    <p>No friends yet. Search for someone by name or email above.</p>
+  </div>
+  {% endif %}
+
+</section>
+
+<script>
+  window.LISA_FRIENDS = { searchUrl: "{% url 'friends:search' %}" };
+</script>
+<script src="{% static 'js/friends.js' %}" defer></script>
+{% endblock %}

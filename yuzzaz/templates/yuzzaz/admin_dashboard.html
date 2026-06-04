@@ -1,0 +1,132 @@
+{% extends 'yuzzaz/full_base.html' %}
+{% block title %}| Admin{% endblock %}
+{% block content %}
+<section class="pt-24 md:pt-28 px-4 md:px-12 pb-16 min-h-screen max-w-5xl mx-auto">
+
+  <div class="flex items-center gap-3 mb-8">
+    <i class="fas fa-gauge-high text-netflix-red text-2xl"></i>
+    <div>
+      <h1 class="text-3xl md:text-4xl font-extrabold leading-none">Admin</h1>
+      <p class="text-white/50 text-sm mt-1">Quick actions and what needs your attention.</p>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
+    <div class="bg-white/5 border border-white/10 rounded-xl p-4">
+      <div class="text-2xl font-extrabold">{{ stats.movies }}</div>
+      <div class="text-xs text-white/50 mt-1"><i class="fas fa-film mr-1"></i>Movies in library</div>
+    </div>
+    <div class="bg-white/5 border border-white/10 rounded-xl p-4">
+      <div class="text-2xl font-extrabold {% if stats.pending_requests %}text-netflix-red{% endif %}">{{ stats.pending_requests }}</div>
+      <div class="text-xs text-white/50 mt-1"><i class="fas fa-clock mr-1"></i>Pending requests</div>
+    </div>
+    <div class="bg-white/5 border border-white/10 rounded-xl p-4">
+      <div class="text-2xl font-extrabold">{{ stats.active_parties }}</div>
+      <div class="text-xs text-white/50 mt-1"><i class="fas fa-tv mr-1"></i>Active parties</div>
+    </div>
+    <div class="bg-white/5 border border-white/10 rounded-xl p-4">
+      <div class="text-2xl font-extrabold">{{ stats.users }}</div>
+      <div class="text-xs text-white/50 mt-1"><i class="fas fa-users mr-1"></i>Users</div>
+    </div>
+  </div>
+
+  <!-- Quick links -->
+  <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-10">
+    {% url 'catalog:upload' as upload_url %}
+    <a href="{{ upload_url }}" class="flex flex-col items-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl p-4 text-center transition">
+      <i class="fas fa-plus text-netflix-red text-xl"></i><span class="text-sm font-semibold">Add movie</span>
+    </a>
+    <a href="{% url 'catalog:library' %}" class="flex flex-col items-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl p-4 text-center transition">
+      <i class="fas fa-film text-xl"></i><span class="text-sm font-semibold">Library</span>
+    </a>
+    <a href="{% url 'parties:create' %}" class="flex flex-col items-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl p-4 text-center transition">
+      <i class="fas fa-clapperboard text-xl"></i><span class="text-sm font-semibold">New party</span>
+    </a>
+    <a href="{% url 'schedule:calendar' %}" class="flex flex-col items-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl p-4 text-center transition">
+      <i class="fas fa-calendar text-xl"></i><span class="text-sm font-semibold">Calendar</span>
+    </a>
+    <a href="/admin/" class="flex flex-col items-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl p-4 text-center transition">
+      <i class="fas fa-screwdriver-wrench text-xl"></i><span class="text-sm font-semibold">Django admin</span>
+    </a>
+  </div>
+
+  <!-- Open movie requests -->
+  <div class="flex items-center justify-between mb-3">
+    <h2 class="text-lg font-bold">Open requests</h2>
+    <span class="text-xs text-white/40">{{ open_requests|length }} open</span>
+  </div>
+
+  {% if open_requests %}
+  <div class="space-y-2 mb-12">
+    {% for r in open_requests %}
+    <div class="flex flex-wrap items-center gap-3 bg-white/5 border border-white/10 rounded-lg p-3">
+      <div class="w-10 h-14 rounded overflow-hidden bg-white/10 shrink-0">
+        {% if r.poster_url %}<img src="{{ r.poster_url }}" class="w-full h-full object-cover">
+        {% else %}<div class="w-full h-full flex items-center justify-center text-white/30"><i class="fas fa-film text-xs"></i></div>{% endif %}
+      </div>
+      <div class="min-w-0 flex-1">
+        <div class="font-semibold truncate">{{ r.title }}{% if r.year %} <span class="text-white/40 font-normal">({{ r.year }})</span>{% endif %}</div>
+        <div class="text-xs text-white/40">
+          {% if r.status == 'approved' %}<span class="text-blue-300">Sourcing</span>{% else %}<span class="text-yellow-300">Pending</span>{% endif %}
+          · {{ r.vote_count }} vote{{ r.vote_count|pluralize }}
+          · by {{ r.requester.get_full_name|default:r.requester.email|default:'—' }}
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="flex flex-wrap items-center gap-1.5">
+        <a href="{{ r.search_link }}" target="_blank" rel="noopener"
+           class="text-xs font-semibold px-2.5 py-1.5 rounded bg-netflix-red hover:bg-netflix-red/90" title="Search for the file">
+          <i class="fas fa-magnifying-glass mr-1"></i>Find
+        </a>
+        <a href="{{ upload_url }}?title={{ r.title|urlencode }}&year={{ r.year|urlencode }}&tmdb_id={{ r.tmdb_id|default:'' }}&poster_url={{ r.poster_url|urlencode }}"
+           class="text-xs font-semibold px-2.5 py-1.5 rounded bg-white/10 hover:bg-white/20" title="Upload the file to fulfill this">
+          <i class="fas fa-upload mr-1"></i>Upload
+        </a>
+        {% if r.status != 'approved' %}
+        <form method="POST" action="{% url 'catalog:request_action' r.id 'approve' %}">{% csrf_token %}
+          <button class="text-xs px-2.5 py-1.5 rounded bg-white/10 hover:bg-white/20" title="Mark as sourcing"><i class="fas fa-check"></i></button>
+        </form>
+        {% endif %}
+        <form method="POST" action="{% url 'catalog:request_action' r.id 'fulfill' %}">{% csrf_token %}
+          <button class="text-xs px-2.5 py-1.5 rounded bg-green-600/30 hover:bg-green-600/50 text-green-200" title="Mark fulfilled"><i class="fas fa-circle-check"></i></button>
+        </form>
+        <form method="POST" action="{% url 'catalog:request_action' r.id 'reject' %}">{% csrf_token %}
+          <button class="text-xs px-2.5 py-1.5 rounded bg-white/10 hover:bg-white/20" title="Close / reject"><i class="fas fa-xmark"></i></button>
+        </form>
+        <form method="POST" action="{% url 'catalog:request_action' r.id 'delete' %}" onsubmit="return confirm('Delete this request?')">{% csrf_token %}
+          <button class="text-xs px-2.5 py-1.5 rounded hover:bg-white/10 text-white/40 hover:text-white" title="Delete"><i class="fas fa-trash"></i></button>
+        </form>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="text-center py-10 text-white/40 bg-white/5 border border-white/10 rounded-lg mb-12">
+    <i class="fas fa-mug-hot text-2xl mb-2"></i>
+    <p class="text-sm">No open requests. All caught up.</p>
+  </div>
+  {% endif %}
+
+  <!-- Recently resolved -->
+  {% if recent_requests %}
+  <h2 class="text-lg font-bold mb-3">Recently resolved</h2>
+  <div class="space-y-1.5">
+    {% for r in recent_requests %}
+    <div class="flex items-center gap-3 text-sm bg-white/5 border border-white/10 rounded-lg px-3 py-2">
+      <span class="min-w-0 flex-1 truncate">{{ r.title }}{% if r.year %} ({{ r.year }}){% endif %}</span>
+      {% if r.status == 'fulfilled' %}
+      <span class="text-xs text-green-300"><i class="fas fa-circle-check mr-1"></i>Completed</span>
+      {% else %}
+      <span class="text-xs text-white/40"><i class="fas fa-circle-xmark mr-1"></i>Closed</span>
+      {% endif %}
+      {% if r.reviewed_at %}<span class="text-xs text-white/30">{{ r.reviewed_at|date:'M j' }}</span>{% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  <p class="text-xs text-white/30 mt-3">Resolved requests are removed automatically after the retention window.</p>
+  {% endif %}
+
+</section>
+{% endblock %}

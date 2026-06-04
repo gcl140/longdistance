@@ -1,0 +1,71 @@
+{% load static %}
+{# Notification bell + live socket + friend-request modal. Included once in the nav. #}
+
+<!-- Ding sound (degrades silently if the file isn't present) -->
+<audio id="notif-ding" src="{% static 'audio/ding3.mp3' %}" preload="auto"></audio>
+
+<!-- Bell -->
+<div class="relative" x-data="notifBell()" x-init="init()" @click.outside="open=false">
+  <button @click="toggle()" class="relative hover:text-white/70 transition" aria-label="Notifications">
+    <i class="fas fa-bell text-lg"></i>
+    <span x-show="$store.notif.unread > 0" x-cloak
+          class="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-netflix-red text-[10px] font-bold flex items-center justify-center"
+          x-text="$store.notif.unread > 9 ? '9+' : $store.notif.unread"></span>
+  </button>
+
+  <!-- Dropdown -->
+  <div x-show="open" x-cloak
+       class="absolute right-0 mt-2 w-80 max-w-[90vw] bg-black/95 border border-white/10 rounded-lg shadow-2xl z-50 overflow-hidden">
+    <div class="flex items-center justify-between px-4 py-3 border-b border-white/10">
+      <span class="font-semibold text-sm">Notifications</span>
+      <button @click="markAllRead()" class="text-xs text-white/50 hover:text-white"
+              x-show="$store.notif.unread > 0">Mark all read</button>
+    </div>
+    <div class="max-h-96 overflow-y-auto">
+      <template x-if="!$store.notif.items.length">
+        <p class="px-4 py-8 text-center text-sm text-white/40">You're all caught up.</p>
+      </template>
+      <template x-for="n in $store.notif.items" :key="n.id">
+        <button type="button" @click="onItem(n)"
+                class="w-full text-left flex gap-3 px-4 py-3 hover:bg-white/5 border-b border-white/5"
+                :class="!n.is_read && 'bg-white/5'">
+          <span class="w-2 h-2 rounded-full mt-1.5 shrink-0" :class="n.is_read ? 'bg-transparent' : 'bg-netflix-red'"></span>
+          <span class="min-w-0 flex-1">
+            <span class="block text-sm" x-text="n.title"></span>
+            <span x-show="n.body" class="block text-xs text-white/50 mt-0.5" x-text="n.body"></span>
+          </span>
+          <i class="fas fa-user-group text-white/30 text-xs mt-1" x-show="n.kind === 'friend_request'"></i>
+        </button>
+      </template>
+    </div>
+    <a href="{% url 'notifications:list' %}" class="block text-center text-xs text-white/60 hover:text-white py-2.5 border-t border-white/10">See all</a>
+  </div>
+</div>
+
+<!-- Friend-request approve/reject modal (global) -->
+<div x-data x-show="$store.notif.modal" x-cloak
+     class="fixed inset-0 z-[90] bg-black/80 flex items-center justify-center p-4"
+     @click.self="$store.notif.modal = null" @keydown.escape.window="$store.notif.modal = null">
+  <div class="w-full max-w-sm bg-netflix-dark border border-white/10 rounded-xl p-6 text-center">
+    <i class="fas fa-user-plus text-3xl text-netflix-red mb-3"></i>
+    <h3 class="text-lg font-bold" x-text="$store.notif.modal ? $store.notif.modal.title : ''"></h3>
+    <p class="text-sm text-white/50 mt-1 mb-6">Accepting adds them to your friends list.</p>
+    <div class="flex gap-3">
+      <button @click="window.respondFriendRequest($store.notif.modal.fr_id, 'accept')"
+              class="flex-1 py-2.5 rounded bg-netflix-red hover:bg-netflix-red/90 font-semibold">Approve</button>
+      <button @click="window.respondFriendRequest($store.notif.modal.fr_id, 'decline')"
+              class="flex-1 py-2.5 rounded bg-white/10 hover:bg-white/20 font-semibold">Reject</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  window.LISA_BELL = {
+    presenceUrl: "{% url 'notifications:presence' %}",
+    feedUrl: "{% url 'notifications:feed' %}",
+    markAllReadUrl: "{% url 'notifications:mark_all_read' %}",
+    markReadUrlTmpl: "{% url 'notifications:mark_read' 0 %}",
+    respondRequestUrlTmpl: "{% url 'friends:respond_request' 0 'ACTION' %}",
+  };
+</script>
+<script src="{% static 'js/bell.js' %}" defer></script>

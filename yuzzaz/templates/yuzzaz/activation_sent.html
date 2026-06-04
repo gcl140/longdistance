@@ -1,0 +1,47 @@
+{% extends 'yuzzaz/base copy.html' %}
+{% load static %}
+{% block title %}Activation Email Sent{% endblock %}
+{% block content %}
+<div class="max-w-md w-full bg-dark/90 backdrop-blur-sm rounded-xl shadow-lg border border-gray-700/50 overflow-hidden">
+  <div class="p-8 sm:p-10">
+    <div class="text-center mb-8">
+      <!-- Icon -->
+      <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-maroon/20 mb-4">
+        <i class="fas fa-envelope-open-text text-maroon text-xl"></i>
+      </div>
+
+      <!-- Title -->
+      <h2 class="text-2xl font-bold text-white">
+        Check Your Email
+      </h2>
+
+      <!-- Messages -->
+      <div class="mt-4 space-y-3 text-gray-300 text-sm">
+        <p>
+          We've sent an activation link to <strong class="text-white">{{ email }}</strong>.
+        </p>
+        <p>
+          Please open this email to activate your account. If you don't see it in your inbox, please remember to also
+          check your <strong class="text-white">spam or junk folder</strong>.
+        </p>
+        <p>
+          If you still haven't received the email after 90 seconds, you'll be able to resend the activation link by
+          clicking the button below.
+        </p>
+      </div>
+    </div>
+
+    <!-- Resend Form -->
+    <form method="post" action="{% url 'resend_activation_email' %}" class="mt-6">
+      {% csrf_token %}
+      <button id="resend-btn" disabled
+        class="w-full flex items-center justify-center px-4 py-3 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-gray-700 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-maroon transition-colors duration-200 cursor-not-allowed opacity-75">
+        <i class="fas fa-clock mr-2"></i>
+        Please wait <span id="countdown" class="font-bold mx-1">90 </span> seconds...
+      </button>
+    </form>
+  </div>
+</div>
+
+<script src="{% static 'js/activation_sent.js' %}" defer></script>
+{% endblock %}

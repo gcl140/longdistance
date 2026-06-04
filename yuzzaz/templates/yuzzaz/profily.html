@@ -1,0 +1,339 @@
+{% extends 'yuzzaz/full_base.html' %}
+{% load static %}
+{% block title %}| Profile{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/profily.css' %}">{% endblock %}
+{% block content %}
+
+    <!-- MISSION -->
+<div class="relative w-full h-[400px] md:h-[500px] flex items-center justify-center text-center">
+    <!-- Background image -->
+    <div class="absolute inset-0 opacity-40" 
+         style="background-image: url('{{ content.hero_image.url }}'); background-size: cover; background-position: center;">
+    </div>
+
+    <!-- Overlay (to make text pop more) -->
+    <div class="absolute inset-0 bg-black/50"></div>
+
+    <!-- Text content -->
+    <h2 class="relative z-10 text-4xl md:text-6xl font-extrabold maroon-glow uppercase text-white">
+        About Lisa
+    </h2>
+</div>
+
+        <!-- MISSION -->
+    <section id="mission" class="py-10">
+      <div class="max-w-7xl mx-auto px-6">
+        <div class="text-center mb-12">
+          <h2 class="text-3xl md:text-4xl font-extrabold maroon-glow">OUR MISSION: <span >{{ content.mission_title}}</span></h2>
+          <p class="mt-4 text-black max-w-2xl mx-auto">{{ content.mission_caption }}</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
+          <div class="lg:col-span-2 reveal glass p-8 rounded-2xl tilt">
+            <h3 class="text-xl font-bold mb-3">{{ content.mission_sub_title }}</h3>
+            <p class="text-black">
+              {{ content.mission_p1 }}
+              <br><br>
+              {{ content.mission_p2 }}
+            </p>
+
+            <div class="mt-6">
+              <a class="inline-flex items-center gap-3 px-4 py-2 rounded-md bg-maroon-500 text-white" href="{% url 'voima_profile' %}">
+                Read Our Story <i class="fas fa-book-open ml-2"></i>
+              </a>
+            </div>
+          </div>
+
+          <div class="lg:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-6">
+            {% for sub_mission in sub_missions %}
+            <div class="reveal glass p-6 rounded-2xl tilt shadow-sm">
+              <div class="text-maroon-500 text-3xl mb-4" ><i class="{{ sub_mission.mission_set_tag }}"></i></div>
+              <h4 class="font-semibold mb-2">{{ sub_mission.mission_set_title }}</h4>
+              <p class="text-black text-sm">{{ sub_mission.mission_set_description }}</p>
+            </div>
+            {% empty %}
+
+            <div class="col-span-full flex flex-col items-center justify-center py-16 px-6 glass rounded-2xl">
+              <div class="bg-maroon-50 rounded-full p-6 mb-4">
+                <i class="fas fa-lightbulb text-maroon-500 text-4xl"></i>
+              </div>
+              <h3 class="text-xl font-semibold text-maroon-500 mb-2">Initiatives Coming Soon</h3>
+              <p class="text-gray-600 text-center max-w-md">We're planning exciting new initiatives. Stay connected to see what's next!</p>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- STATS -->
+    <section id="stats" class="py-10">
+      <div class="max-w-7xl mx-auto px-6">
+        <div class="text-center mb-12">
+          <h2 class="uppercase text-3xl md:text-4xl font-extrabold maroon-glow">{{ content.numbers_title }}</span></h2>
+          <p class="mt-3 muted max-w-2xl mx-auto">{{ content.numbers_description }}</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {% comment %} {% for number in numbers %}
+          <div class="reveal glass p-6 rounded-2xl text-center tilt">
+            <div class="text-maroon-500 text-4xl font-bold mb-2" x-data="{ n:0 }" x-init="() => { let t=240000; let i=setInterval(()=>{ n+=4000; if(n>=t){ n=t; clearInterval(i)} },18) }" x-text="n.toLocaleString()">0</div>
+            <div class="muted">Annual births with SCD worldwide</div>
+          </div>
+          {% empty %}
+          <p class="muted text-sm">To be added Soon!</p>
+          {% endfor %} {% endcomment %}
+          {% for number in numbers %}
+            <div class="reveal glass p-6 rounded-2xl text-center tilt">
+            {% comment %} <div class="text-maroon-500 text-4xl font-bold mb-2" x-data="{ n:0 }" x-init="() => { let t={{ number.number }}; let i=setInterval(()=>{ n+={{number.divisor}}; if(n>=t){ n=t; clearInterval(i)} },18) }" x-text="n.toLocaleString()">0</div><span>{% if number.number_type == 'percentage' %}%{% endif %}</span> {% endcomment %}
+            <div class="flex items-baseline justify-center">
+              <div class="text-maroon-500 text-4xl font-bold mb-2"
+                  x-data="{ n:0 }"
+                  x-init="() => { let t={{ number.number }}; let i=setInterval(()=>{ n+={{number.divisor}}; if(n>=t){ n=t; clearInterval(i)} },18) }"
+                  x-text="n.toLocaleString()">0</div>
+              {% if number.number_type == 'percentage' %}
+                <span class="text-maroon-500 text-4xl font-bold mb-2 ml-1">%</span>
+              {% endif %}
+            </div>
+              <div class="muted"><a href="{% url 'statistics_detail' number.pk %}">{{ number.number_description|truncatewords:8 }}</a></div>
+            </div>
+          {% empty %}
+            <div class="col-span-full flex flex-col items-center justify-center py-12 px-6">
+              <div class="bg-maroon-50 rounded-full p-6 mb-4">
+                <i class="fas fa-chart-line text-maroon-500 text-4xl"></i>
+              </div>
+              <h3 class="text-xl font-semibold text-maroon-500 mb-2">Statistics Coming Soon</h3>
+              <p class="text-gray-600 text-center max-w-md">We're compiling important data and metrics. Check back soon for updates!</p>
+            </div>
+          {% endfor %}
+
+        </div>
+      </div>
+    </section>
+    
+    <section id="testimonials" class="py-10 relative overflow-hidden bg-maroon-500">
+      <!-- Background elements -->
+      <div class="absolute inset-0 -z-10 opacity-10">
+        <div class="absolute top-1/4 left-10 w-72 h-72 bg-gold rounded-full mix-blend-multiply filter blur-xl animate-pulse-slow"></div>
+        <div class="absolute bottom-1/3 right-10 w-96 h-96 bg-gold rounded-full mix-blend-multiply filter blur-xl animate-pulse-slow animation-delay-2000"></div>
+      </div>
+      
+      <div class="max-w-7xl mx-auto px-6 relative">
+        <div class="text-center mb-16">
+          <h2 class="text-white uppercase text-3xl md:text-4xl font-extrabold maroon-glow" >
+            {{ content.testimonial_headline }}
+          </h2>
+          <p class="mt-4 text-white max-w-2xl mx-auto">
+            {{ content.testimonial_description }}
+          </p>
+        </div>
+
+        <!-- Asymmetrical slider container -->
+        <div class="relative" x-data="{
+          currentIndex: 0,
+          total: {{ testimonials|length }},
+          init() {
+            this.interval = setInterval(() => this.next(), 6000);
+          },
+          next() {
+            this.currentIndex = (this.currentIndex + 1) % this.total;
+          },
+          prev() {
+            this.currentIndex = (this.currentIndex - 1 + this.total) % this.total;
+          },
+          goTo(index) {
+            this.currentIndex = index;
+          },
+          pause() {
+            clearInterval(this.interval);
+          },
+          resume() {
+            this.interval = setInterval(() => this.next(), 6000);
+          }
+        }" @mouseenter="pause()" @mouseleave="resume()">
+          
+          <!-- Main slider with staggered layout -->
+          <div class="relative h-[550px] md:w-[85vh] md:h-[250px]">
+            <!-- Testimonial 1 -->
+
+             {% for testimonial in testimonials %}
+            <div class="absolute inset-0 transition-all duration-700 ease-in-out transform" 
+                :class="{
+                  'opacity-100 scale-100 z-30': currentIndex === {{ forloop.counter0 }},
+                  'opacity-0 scale-90 -translate-x-20 z-10': currentIndex !== {{ forloop.counter0 }}
+                }">
+              <div class="flex flex-col md:flex-row items-center  gap-8">
+                <!-- Profile image positioned uniquely -->
+                <div class="relative md:w-2/5 order-2 md:order-1">
+                  <div class="w-48 h-48 mx-auto md:ml-auto md:mr-0 rounded-2xl overflow-hidden shadow-2xl border-4 border-maroon-500 transform rotate-6 hover:rotate-0 transition-transform duration-500">
+
+                    
+                    {% if testimonial.author_image %}
+                    <img src="{{ testimonial.author_image.url }}" 
+                        alt="{{ testimonial.testimonial_author.first_name }}" class="w-full h-full object-cover">
+
+                    {% else%}
+
+                    <img src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80" 
+                        alt="Sarah" class="w-full h-full object-cover">
+                    {% endif %}
+                  </div>
+                  <!-- Decorative element -->
+                  <div class="absolute -bottom-6 -left-6 w-24 h-24 bg-gold/20 rounded-full -z-10"></div>
+                </div>
+                
+                <!-- Testimonial content -->
+                <div class="md:w-3/5 order-1 md:order-2 text-center md:text-left">
+                  <div class="glass p-8 rounded-2xl shadow-xl border bg-white border-maroon-500/20 relative w-[280px] md:w-[900px]">
+                    <!-- Quote icon -->
+                    <i class="fas fa-quote-left text-4xl text-white/30 absolute -top-4 -left-4"></i>
+
+                    <p class="text-2xl relative z-10 text-black italic font-island">"{{ testimonial.testimonial_content }}"</p>
+
+                    <div class="mt-6 flex flex-col md:flex-row items-center justify-between">
+                      <div>
+                        <div class="font-semibold text-black text-xl font-island">{{ testimonial.testimonial_author.first_name}} {{ testimonial.testimonial_author.last_name|slice:":1" }}.</div>
+                        <div class="text-sm text-black">{{ testimonial.author_location }}</div>
+                      </div>
+                      <div class="mt-4 md:mt-0">
+
+                        <div class="flex text-maroon-500">
+                          {% for _ in testimonial.stars %}
+                            <i class="fas fa-star"></i>
+                          {% endfor %}
+                          {% for _ in testimonial.empty_stars %}
+                            <i class="far fa-star"></i>
+                          {% endfor %}
+                        </div>
+
+
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            {% empty %}
+              <div class="text-center text-black">No testimonials available.</div>
+            {% endfor %}
+
+          </div>
+
+          <!-- Navigation controls -->
+          <div class="flex justify-center mt-12 space-x-4">
+            <button @click="prev()" class="w-12 h-12 rounded-full bg-voima-black/80 border border-maroon-500/30 flex items-center justify-center hover:bg-gold hover:text-voima-black transition-all duration-300 shadow-lg transform hover:scale-110 focus:outline-none"  aria-label="Previous testimonial">
+              <i class="fas fa-chevron-left"></i>
+            </button>
+            
+            <!-- Indicators -->
+            <div class="flex items-center space-x-2 mx-4">
+              <template x-for="(dot, i) in total" :key="i">
+                <button @click="goTo(i)" :class="{'bg-white w-8': currentIndex === i, 'bg-gray-600 w-3': currentIndex !== i}"
+                        class="h-3 rounded-full transition-all duration-300 focus:outline-none" :aria-label="`Go to testimonial ${i+1}`"></button>
+              </template>
+            </div>
+            
+            <button @click="next()" class="w-12 h-12 rounded-full bg-voima-black/80 border border-maroon-500/30 flex items-center justify-center hover:bg-gold hover:text-voima-black transition-all duration-300 shadow-lg transform hover:scale-110 focus:outline-none"  aria-label="Next testimonial">
+              <i class="fas fa-chevron-right"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+        <!-- TEAM -->
+    <section id="team" class="py-14 bg-gradient-to-b from-transparent to-transparent">
+      <div class="max-w-7xl mx-auto px-6">
+        <div class="text-center mb-12">
+          <h2 class="uppercase text-3xl md:text-4xl font-extrabold maroon-glow">{{ content.team_title }}</h2>
+          <p class="mt-3 text-black max-w-2xl mx-auto">{{ content.team_description }}</p>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+          <!-- Team Card -->
+          {% for member in team_members %}
+          <div class="reveal glass p-6 rounded-2xl tilt text-center shadow-md">
+            {% if member.member_image %}
+            <img src="{{ member.member_image.url }}" alt="{{ member.member_name}}" class="w-32 h-32 mx-auto rounded-full object-cover border-4 border-maroon-400 shadow-lg">
+            {% else %}
+            <img src="https://picsum.photos/600/400?random=1" alt="{{ member.member_name}}" class="w-32 h-32 mx-auto rounded-full object-cover border-4 border-maroon-400 shadow-lg">
+            {% endif %}
+            <h3 class="mt-4 font-bold text-lg text-maroon-300"><a href="{% url 'team_member_detail' member.pk %}">{{ member.member_name }}</a></h3>
+            <p class="text-black text-sm">{{ member.member_role }}</p>
+            <div class="mt-3 flex justify-center gap-3 text-maroon-500 text-lg">
+              {% if member.linkedin_url %}
+              <a href="{{ member.linkedin_url }}" target="_blank" rel="noopener noreferrer"><i class="fab fa-linkedin"></i></a>
+              {% endif %}
+              {% if member.twitter_url %}
+              <a href="{{ member.twitter_url }}" target="_blank" rel="noopener noreferrer"><i class="fab fa-twitter"></i></a>
+              {% endif %}
+              {% if member.github_url %}
+              <a href="{{ member.github_url }}" target="_blank" rel="noopener noreferrer"><i class="fab fa-github"></i></a>
+              {% endif %}
+              {% if member.facebook_url %}
+              <a href="{{ member.facebook_url }}" target="_blank" rel="noopener noreferrer"><i class="fab fa-facebook"></i></a>
+              {% endif %}
+              {% if member.instagram_url %}
+              <a href="{{ member.instagram_url }}" target="_blank" rel="noopener noreferrer"><i class="fab fa-instagram"></i></a>
+              {% endif %}
+              {% if member.phone %}
+              <a href="tel:{{ member.phone }}"><i class="fas fa-phone-alt"></i></a>
+              {% endif %}
+            </div>
+          </div>
+          {% empty %}
+          <div class="col-span-full flex flex-col items-center justify-center py-16 px-6">
+            <div class="bg-maroon-50 rounded-full p-6 mb-4">
+              <i class="fas fa-users text-maroon-500 text-4xl"></i>
+            </div>
+            <h3 class="text-xl font-semibold text-maroon-500 mb-2">Team Members Coming Soon</h3>
+            <p class="text-gray-600 text-center max-w-md">We're building an amazing team. Meet them soon!</p>
+          </div>
+          {% endfor %}
+        </div>
+
+      </div>
+    </section>
+
+
+    <!-- GALLERY -->
+    <section id="gallery" class="py-14 bg-gradient-to-b from-transparent to-transparent">
+      <div class="max-w-7xl mx-auto px-6">
+        <div class="text-center mb-12">
+          <h2 class="uppercase text-3xl md:text-4xl font-extrabold maroon-glow">{{ content.gallery_title }}</h2>
+          <p class="mt-3 muted max-w-2xl mx-auto">{{ content.gallery_description }}</p>
+        </div>
+
+      <!-- Gallery Grid -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+
+          <!-- Gallery Item -->
+           {% for image in gallery_images %}
+          <div class="group relative overflow-hidden rounded-2xl cursor-pointer shadow-lg hover:shadow-2xl transition-shadow duration-500">
+            {% if image.image %}
+            <img src="{{ image.image.url }}"
+                alt="{{ image.image_title}}"
+                class="w-full h-64 object-cover transform group-hover:scale-110 group-hover:rotate-1 transition duration-700 ease-out rounded-xl">
+            {% else %}
+            <img src="https://picsum.photos/600/400?random=1"
+                alt="Gallery Item 1"
+                class="w-full h-64 object-cover transform group-hover:scale-110 group-hover:rotate-1 transition duration-700 ease-out rounded-xl">
+            {% endif %}
+            <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent 
+                        opacity-0 group-hover:opacity-100 transition duration-500 flex items-end p-5">
+              <div class="transform translate-y-6 group-hover:translate-y-0 transition duration-500 ease-out">
+                <p class="text-white font-semibold text-lg"><a href="{% url 'gallery_detail' image.pk %}">{{ image.image_title }}</a></p>
+                <p class="text-gray-300 text-sm mt-1">{{ image.caption|truncatewords:15 }}</p>
+              </div>
+            </div>
+          </div>
+          {% empty %}
+          <p class="muted text-sm text-center">No images available</p>
+          {% endfor %}
+
+        </div>
+
+        </div>
+    </section>
+
+
+{% endblock %}

@@ -1,0 +1,92 @@
+{% load static %}
+{% block extra_head %}
+  <link rel="stylesheet" href="{% static 'css/gallery.css' %}">
+{% endblock %}
+{% if images_page %}
+<section class="relative text-white pt-20 bg-maroon-500 overflow-hidden">
+  <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- Header Section -->
+    <div class="text-center mb-16">
+      <h2 class="text-4xl md:text-5xl text-white lg:text-6xl font-bold font-playfair">
+        {{ content.gallery_title }}
+      </h2>
+      <div class="flex items-center justify-center gap-4 my-4">
+        <div class="h-px w-12 bg-white/50"></div>
+        <span class="text-sm font-semibold tracking-widest uppercase">
+          GALLERY
+        </span>
+        <div class="h-px w-12 bg-white/50"></div>
+      </div>
+      <div class="max-w-3xl mx-auto">
+        <p class="text-lg text-white/90 leading-relaxed">
+          {{ content.gallery_description }}
+        </p>
+      </div>
+    </div>
+  </div>
+  <div class="wrapper">
+
+    <nav class="lil-nav">
+      {% for image in images_page %}
+      <a href="#image-{{ forloop.counter }}">
+        <img class="lil-nav__img" src="{{ image.image.url }}" alt="{{ image.image_title }}" />
+      </a>
+      {% empty %}
+      <p>No images available.</p>
+      {% endfor %}
+    </nav>
+
+
+    <div class="gallery h-screen overflow-y-scroll snap-y snap-mandatory scroll-smooth">
+      {% for image in images_page %}
+        <div id="image-{{ forloop.counter }}" class="relative group h-screen snap-start flex items-center justify-center">
+          <img src="{{ image.image.url }}" alt="{{ image.image_title }}" class="gallery__img w-full h-full object-cover"/>
+
+          <!-- Overlay -->
+          <div class="absolute inset-x-0 bottom-0 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out bg-gradient-to-t from-black/90 via-black/70 to-transparent py-6 px-6">
+            <a href="{% url 'gallery_detail' image.pk %}">
+            <h3 class="text-white font-bold text-lg">
+              {{ image.image_title }}
+            </h3>
+            </a>
+            <p class="text-white/80 text-sm mt-1">
+              {{ image.caption }}
+            </p>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+
+  </div>
+
+  <!-- Pagination -->
+</section>
+
+{% if images_page.has_other_pages %}
+<div class="flex justify-center items-center gap-6 py-10">
+  
+  {% if images_page.has_previous %}
+  <a href="?images_page={{ images_page.previous_page_number }}"
+     class="group flex items-center gap-2 px-5 py-2 rounded-full border border-maroon-500/30 text-maroon-500/90 bg-white/10
+            hover:bg-maroon-500 hover:text-gray-300 transition-all duration-300">
+    <i class="fas fa-arrow-left text-xs group-hover:-translate-x-0.5 transition"></i>
+    Prev
+  </a>
+  {% endif %}
+
+  <span class="text-sm tracking-wider uppercase text-maroon-500/80">
+    Page {{ images_page.number }} of {{ images_page.paginator.num_pages }}
+  </span>
+
+  {% if images_page.has_next %}
+  <a href="?images_page={{ images_page.next_page_number }}"
+     class="group flex items-center gap-2 px-5 py-2 rounded-full border border-maroon-500/30 text-maroon-500/90 bg-white/10
+            hover:bg-maroon-500 hover:text-gray-300 transition-all duration-300">
+    Next
+    <i class="fas fa-arrow-right text-xs group-hover:translate-x-0.5 transition"></i>
+  </a>
+  {% endif %}
+
+</div>
+{% endif %}
+{% endif %}
