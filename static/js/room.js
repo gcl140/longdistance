@@ -30,6 +30,9 @@
 
   let sock, MYID = null, applying = false, lastUrl = L.videoUrl || "", lastMsgId = 0, hls = null;
   let resumed = false, previewVideo = null, previewBusy = false, previewWant = null;
+  // Sync-seek bookkeeping: prevents heartbeat thrashing while a seek is mid-flight.
+  let seekingTo = null;        // Target time of the in-flight sync-driven seek, or null.
+  let seekStartedAt = 0;       // perf clock when seek began (for safety timeout).
   function fmt(t) {
     if (!isFinite(t) || t < 0) return '0:00';
     t = Math.floor(t);
@@ -206,22 +209,52 @@
     if (CAN_CONTROL) { ctx.syncLabel = s.is_playing ? 'playing' : 'paused'; return; }
     if (!lastUrl) return;  // nothing loaded yet (player.src is empty for HLS/MSE)
     applying = true;
+
+    // If a sync-driven seek is still in flight, skip new nudges. Without this,
+    // the 1s heartbeat keeps cancelling the in-flight buffer fetch and the
+    // guest never lands on the host's position (the "different scenes" bug).
+    // Safety: release the lock after 6s in case `seeked` never fires.
+    const seekStuck = seekingTo != null && (performance.now() - seekStartedAt) > 6000;
+    if (seekingTo != null && !seekStuck) { applying = false; return; }
+    if (seekStuck) seekingTo = null;
+
     if (s.position != null) {
       const drift = s.position - player.currentTime;
-      // Hard jump on big drift; nudge playbackRate on small drift so we glide
-      // back instead of jolting. Under 0.3s = "in sync" cosmetically.
-      if (Math.abs(drift) > 1.5) {
+      if (Math.abs(drift) > 10) {
+        // Late join / huge jump: pause, seek, wait for `seeked` to fire,
+        // then resume. Stops the 1s-heartbeat thrash on big gaps.
+        seekingTo = s.position; seekStartedAt = performance.now();
+        const wasPlaying = s.is_playing !== false;
+        player.pause();
+        player.currentTime = s.position;
+        ctx.syncLabel = 'buffering…';
+        const onSeeked = () => {
+          player.removeEventListener('seeked', onSeeked);
+          seekingTo = null;
+          if (wasPlaying) player.play().catch(() => {});
+        };
+        player.addEventListener('seeked', onSeeked);
+      } else if (Math.abs(drift) > 1.5) {
+        // Mid-drift hard correction — still gated so we don't restack seeks.
+        seekingTo = s.position; seekStartedAt = performance.now();
         player.currentTime = s.position;
         player.playbackRate = 1.0;
+        const onSeeked = () => {
+          player.removeEventListener('seeked', onSeeked);
+          seekingTo = null;
+        };
+        player.addEventListener('seeked', onSeeked);
       } else if (Math.abs(drift) > 0.3) {
-        // 0.3s–1.5s drift: catch up smoothly within ~3s.
+        // 0.3s–1.5s: smooth catch-up via playback rate, no seek.
         player.playbackRate = drift > 0 ? 1.05 : 0.97;
       } else {
         player.playbackRate = 1.0;
       }
-      ctx.syncLabel = Math.abs(drift) < 0.3 ? 'in sync' : 'syncing…';
+      ctx.syncLabel = seekingTo != null ? 'buffering…' : (Math.abs(drift) < 0.3 ? 'in sync' : 'syncing…');
     }
-    if (s.is_playing === true && player.paused) { if (s.position != null) player.currentTime = s.position; player.play().catch(() => {}); }
+    if (s.is_playing === true && player.paused && seekingTo == null) {
+      player.play().catch(() => {});
+    }
     if (s.is_playing === false && !player.paused) player.pause();
     applying = false;
   }
